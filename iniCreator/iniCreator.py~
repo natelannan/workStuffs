@@ -320,41 +320,7 @@ def corp():
 
 def customer():
     print "customer"
-    Alength = customFields[0][1]
-    Blength = customFields[1][1]
-    Clength = customFields[2][1]
-    Dlength = customFields[3][1]
-
-    D = int(str(cardNumber)[len(str(cardNumber))-CNdigits:])
-    B = int(str(cardNumber)[:len(str(cardNumber))-CNdigits])
-    C = int(str(cardNumber)[:len(str(cardNumber))-CNdigits])
-    A = int(str(cardNumber)[:len(str(cardNumber))-CNdigits])	
-    CN_bin = bin(CN)
-    for x in range(0, CNlength-len(CN_bin)):
-        CN_bin = '0'+CN_bin
-    parity = CN_bin + '0'
-    FAC_bin = bin(FAC)
-    noLeadingZeros = FAC_bin
-    flag = False
-    for y in range(0, FAClength-len(FAC_bin)):
-        FAC_bin = '0'+FAC_bin
-	flag = True
-    if(flag):
-    	if(parityChange):
-    	    precedingZeros = x+3  # add 2 for parity
-    	else:
-   	    precedingZeros = x+2
-    else:
-	precedingZeros = 0
-
-    for x in range (0, trailingZeros):
-        parity = parity+'0'
-    if (parityChange):
-	PACS_bin = '00'+FAC_bin+parity
-    else:
-    	PACS_bin = '0'+FAC_bin+parity
-    noLeadingZeros = noLeadingZeros+parity
-    return [PACS_bin, noLeadingZeros, precedingZeros]  
+    return '0'
 
 def bin(s):
     return str(s) if s<=1 else bin(s>>1) + str(s&1)

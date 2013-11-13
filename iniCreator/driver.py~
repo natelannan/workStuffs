@@ -4,11 +4,11 @@
 from iniCreator import iniCreator
 
 
-cardNumber = 1012345
+cardNumber = 99999999
 bitLength = 26
-cardDataFormat = ['iClassFormat = 42', 'MifareFormat = 0', 'ProxFormat = 1', 'SeosFormat = 100']
+cardDataFormat = ['iClassFormat = 42', 'MifareFormat = 0', 'ProxFormat = 20', 'SeosFormat = 100']
 activeCard = 'Prox'
-trailingZeros = 6
+trailingZeros = 4
 outFileName = 'foo.ini'
 customFields = [(0,8),(8,8),(16,8),(24,8)]
 
