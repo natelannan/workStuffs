@@ -29,6 +29,19 @@ trailingZeros = 6
 outFileName = "default.ini"
 customFields = [(0,0),(0,0),(0,0),(0,0)]
 
+class bitField:
+	def __init__(self, name='blank', startbit=0, length = 0, decValue = 0, binValue = '0'):
+		self.name = name		
+		self.startbit = startbit
+		self.length = length
+		self.endbit = self.startbit+self.length-1
+		self.decValue = decValue
+		self.binValue = binValue
+	        self.digits = len(str(2**self.length -1))
+	def padZeros(self):
+		for x in range(0, self.length-len(self.binValue)):
+			self.binValue = '0'+self.binValue
+
 def iniCreator(argv):
     # Usage
     if ((len(argv)< 6)or (len(argv)>7)):
@@ -59,7 +72,8 @@ def iniCreator(argv):
         print "\t\t254 - Auto"
         print "\t\t255 - Custom"
 	print "\tExample Array:  ['ProxFormat = 0', 'iClassFormat = 255']"
-        print "\tExample Array:  ['iClassFormat = 42', 'MifareFormat = 4', 'ProxFormat = 254', 'SeosFormat = 100']\n"
+        print "\tExample Array:  ['iClassFormat = 42', 'MifareFormat = 4',"
+	print "\t'ProxFormat = 254', 'SeosFormat = 100']\n"
         print "ACTIVE CARD:"
         print "\tCard type that is going to be used while testing."
         print "\tExample:  iClass\n"
@@ -155,12 +169,14 @@ def writeFile():
 
     #create raw pacs bits
     PACS = createPACS()
+    print PACS
     file.write("[RawPACSBits]\n")
     file.write("PACSBits = "+PACS+"\n")
     file.close()
 
 
 def createPACS():
+    global trailingZeros
     possibleFormats = {0   : raw,
                        1   : h01,
                        2   : h02,
@@ -181,8 +197,21 @@ def createPACS():
 
     #if set to Auto, grab one of the other formats to create PACS bits.
     if formatValue[0]==254:
-        keys = possibleFormats.keys()
-        formatValue[0]=choice(keys)
+	    if bitLength < 27:
+		    keys = [1]
+	    elif bitLength < 26 and bitLength <33:
+		    keys = [1,20]
+	    elif bitLength < 32 and bitLength < 35:
+		    keys = [1,20,100]
+	    else:
+		    keys = [1,20,100,2]
+	    formatValue[0]=choice(keys)
+    
+    if formatValue[0] != 0:
+	    if (bitLength+trailingZeros)%8 != 0:
+		    trailingZeros = 8-(bitLength%8)
+		    print "trailing zeros automatically corrected for random format used" 
+
 
     PACS = possibleFormats[formatValue[0]]()
     return PACS
@@ -266,7 +295,6 @@ def h20():
     BCDdecimal =""
     for char in str(cardNumber):
 	BCDdecimal = BCDdecimal+bin(int(char))
-    print BCDdecimal
     parity = BCDdecimal + '0000'
     for x in range (0, trailingZeros):
         parity = parity+'0'
@@ -282,7 +310,6 @@ def h20():
     	precedingZeros = y+1
     else:
 	precedingZeros = 0
-    print precedingZeros
 
     PACS_bin = parity
 
@@ -300,10 +327,15 @@ def csn():
     sys.exit(0)
 
 def corp():
+    global cardNumber
     print "corp"
     if len(str(cardNumber)) < 9:
-        print "cardNumber is to short for Corp1000 Format.  No ini created."
-        sys.exit (1) 
+        print "cardNumber is to short for Corp1000 Format. No ini File Created."
+	sys.exit(1)
+#	for x in range(0,(9-len(str(cardNumber)))):
+#		cardNumber = int('1'+str(cardNumber))
+#	print "New Card Number is: " + str(cardNumber)
+         
 
 #def fac_cn_formats(CNdigits, CNlength, FAClength, parityChange = False):
 #   return [PACS_bin, noLeadingZeros, precedingZeros]
@@ -320,41 +352,119 @@ def corp():
 
 def customer():
     print "customer"
-    Alength = customFields[0][1]
-    Blength = customFields[1][1]
-    Clength = customFields[2][1]
-    Dlength = customFields[3][1]
 
-    D = int(str(cardNumber)[len(str(cardNumber))-CNdigits:])
-    B = int(str(cardNumber)[:len(str(cardNumber))-CNdigits])
-    C = int(str(cardNumber)[:len(str(cardNumber))-CNdigits])
-    A = int(str(cardNumber)[:len(str(cardNumber))-CNdigits])	
-    CN_bin = bin(CN)
-    for x in range(0, CNlength-len(CN_bin)):
-        CN_bin = '0'+CN_bin
-    parity = CN_bin + '0'
-    FAC_bin = bin(FAC)
-    noLeadingZeros = FAC_bin
+    bitFields = []
+    for x in range(0,4):
+        if customFields[x][1]!=0:
+            if x==0:
+                A = bitField('A',customFields[0][0],customFields[0][1])
+                if (A.digits % 2 != 0):
+                    A.digits = A.digits +1
+                bitFields.append(A)
+            elif x==1:
+                B = bitField('B',customFields[1][0],customFields[1][1])
+                if (B.digits % 2 != 0):
+                    B.digits = B.digits +1
+                bitFields.append(B)
+            elif x==2:
+                C = bitField('C',customFields[2][0],customFields[2][1])
+                if (C.digits % 2 != 0):
+                    C.digits = C.digits +1
+                bitFields.append(C)
+            else:
+                D = bitField('D',customFields[3][0],customFields[3][1])
+                if (D.digits % 2 != 0):
+                    D.digits = D.digits +1
+                bitFields.append(D)
+
+    sortedFields = sorted(bitFields, key=lambda field: field.startbit)
+
+    minDigits=0
+    for x in sortedFields[:-1]:  #all but top most field which can be padded with zeros so all it needs to be is 1 digit
+            minDigits = minDigits + x.digits
+    minDigits = minDigits +1  #add one for last field.  This is the smallest value that cardNumber can have 
+
+    if (len(str(cardNumber)) < minDigits):
+        print "Card number is not large enough for bit fields"
+        sys.exit(1)
+    
+
+    tempFields = sortedFields[:]  #shallow copy
+    indexAddition = 0 #make sure index is incremented when blank inserted in tempFields
+
+    for x in range(0,len(sortedFields)-1):
+	if sortedFields[x].endbit+1 != sortedFields[x+1].startbit:
+		if sortedFields[x].endbit >= sortedFields[x+1].startbit:
+			print "bit fields overlap.  We have issues!"
+			sys.exit(1)
+		else:	
+			print "need a blank space between "+sortedFields[x].name+" and "+sortedFields[x+1].name
+			blankStartbit  = sortedFields[x].endbit+1
+			blankLength = (sortedFields[x+1].startbit) - blankStartbit
+			blankBinValue = ''
+			for y in range(0,blankLength):
+				blankBinValue = '0'+blankBinValue
+			tempFields.insert(x+1+indexAddition, bitField(startbit=blankStartbit, length=blankLength, binValue = blankBinValue))
+			print "Inserted blank field starting at bit "+str(blankStartbit)+" of length "+str(blankLength)
+			indexAddition = indexAddition+1
+    sortedFields = tempFields
+
+    maxDigits=0
+    for x in sortedFields:
+        maxDigits = maxDigits + x.digits
+
+    cardNumWithZeros = str(cardNumber)
+    for x in range(0,maxDigits-len(str(cardNumber))):
+        cardNumWithZeros = '0'+cardNumWithZeros
+
+
+    nextField = 0
+    if contains(bitFields, lambda x: x.name == 'A'):
+	    A.decValue = int(cardNumWithZeros[nextField:A.digits])
+	    nextField = nextField + A.digits
+    if contains(bitFields, lambda x: x.name == 'B'):
+	    B.decValue = int(cardNumWithZeros[nextField:nextField+B.digits])
+	    nextField = nextField + B.digits
+    if contains(bitFields, lambda x: x.name == 'C'):
+	    C.decValue = int(cardNumWithZeros[nextField:nextField+C.digits])
+	    nextField = nextField + C.digits
+    if contains(bitFields, lambda x: x.name == 'D'):
+	    D.decValue = int(cardNumWithZeros[nextField:nextField+D.digits])
+	    nextField = nextField + D.digits
+
+
+
+    for x in sortedFields:
+        x.binValue=bin(x.decValue)
+        x.padZeros()
+
+    noLeadingZeros = ''
+    for x in reversed(sortedFields):
+	noLeadingZeros = noLeadingZeros + x.binValue
+
+    binaryString = noLeadingZeros
     flag = False
-    for y in range(0, FAClength-len(FAC_bin)):
-        FAC_bin = '0'+FAC_bin
+    for x in range(0, bitLength-len(binaryString)):
+	binaryString = '0'+binaryString
 	flag = True
     if(flag):
-    	if(parityChange):
-    	    precedingZeros = x+3  # add 2 for parity
-    	else:
-   	    precedingZeros = x+2
+    	    precedingZeros = x+1 
     else:
 	precedingZeros = 0
 
     for x in range (0, trailingZeros):
-        parity = parity+'0'
-    if (parityChange):
-	PACS_bin = '00'+FAC_bin+parity
-    else:
-    	PACS_bin = '0'+FAC_bin+parity
-    noLeadingZeros = noLeadingZeros+parity
-    return [PACS_bin, noLeadingZeros, precedingZeros]  
+        binaryString = binaryString+'0'
+        noLeadingZeros = noLeadingZeros +'0'
+
+    PACS_bin = binaryString
+
+    #def calculateTZField(PACS_bin):
+    tzField = calculateTZField(PACS_bin)
+
+    #def leadingZeros(PACS_bin, noLeadingZeros, precedingZeros):
+    PACS = leadingZeros(PACS_bin, noLeadingZeros, precedingZeros)
+   
+    return tzField+PACS
 
 def bin(s):
     return str(s) if s<=1 else bin(s>>1) + str(s&1)
@@ -399,7 +509,7 @@ def fac_cn_formats(CNdigits, CNlength, FAClength, parityChange = False):
     FAC_bin = bin(FAC)
     noLeadingZeros = FAC_bin
     flag = False
-    for y in range(0, FAClength-len(FAC_bin)):
+    for x in range(0, FAClength-len(FAC_bin)):
         FAC_bin = '0'+FAC_bin
 	flag = True
     if(flag):
@@ -417,8 +527,13 @@ def fac_cn_formats(CNdigits, CNlength, FAClength, parityChange = False):
     else:
     	PACS_bin = '0'+FAC_bin+parity
     noLeadingZeros = noLeadingZeros+parity
-    return [PACS_bin, noLeadingZeros, precedingZeros]  
-        
-    
+    return [PACS_bin, noLeadingZeros, precedingZeros]
+
+def contains (list, filter):
+	for x in list:
+		if filter (x):
+			return True
+	return False
+     
 if __name__ == '__main__':
     iniCreator(sys.argv[1:])
