@@ -34,55 +34,8 @@ class bitField:
 			self.binValue = '0'+self.binValue
 
 def iniCreator(argv):
-    # Usage
     if ((len(argv)< 6)or (len(argv)>7)):
-        print "usage:  iniCreator.py <cardNumber> <bitLength> <cardDataFormat> <activeCard> <trailingZeros> <outFileName> [customFields]\n"
-        print "CARD NUMBER:"
-        print ("\tCard ID number that will be translated to PACS bits based on bit length and card data format.\n"
-	       "\tThis is the ID you expect to see when the card is scanned.  For formats that include FAC and CN\n"
-               "\tthe FAC should be included in this number.\n")
-        print "BIT LENGTH:"
-        print "\tValue of number of bits on card.  Standard formats include - "
-        print "\t\tH10301 (26 bit)"
-        print "\t\tH10302 (37 bit)"
-        print "\t\tH10304 (37 bit)"
-        print "\t\tH10320 (32 bit)"
-        print "\t\tCorp 1000 (35 bit)\n"
-        print "CARD DATA FORMAT:"
-        print "\tArray of strings associated with card format and value."
-        print "\tCard format valid input:"
-        print "\t\tiClassFormat\n\t\tMifareFormat\n\t\tProxFormat\n\t\tSeosFormat"
-        print "\tvalue valid input:"
-        print "\t\t42 - Card Serial Number"
-        print "\t\t0 - Wiegand Raw"
-        print "\t\t1 - H10301"
-        print "\t\t2 - H10302"
-        print "\t\t4 - H10304"
-        print "\t\t20 - H10320"
-        print "\t\t100 - Corp 1000"
-        print "\t\t254 - Auto"
-        print "\t\t255 - Custom"
-	print "\tExample Array:  ['ProxFormat = 0', 'iClassFormat = 255']"
-        print "\tExample Array:  ['iClassFormat = 42', 'MifareFormat = 4',"
-	print "\t'ProxFormat = 254', 'SeosFormat = 100']\n"
-        print "ACTIVE CARD:"
-        print "\tCard type that is going to be used while testing."
-        print "\tExample:  iClass\n"
-        print "TRAILING ZEROS:"
-        print "\tNumber of zeros added to PACS bits.  Valid input range is [0,16]\n"
-        print "OUTFILE NAME:"
-        print "\tini file name to be created.  Example:  foo.ini\n"
-        print "CUSTOM FIELDS:"
-        print ("\toptional array to set CustomCardDataFormat Settings.\n"
-               "\tThe 4 fields include A,B,C,D which have a start bit value\n"
-               "\tand a length value.  These values should be in decimal and\n"
-               "\tare passed as a 2 item array of the form (start, length).\n"
-               "\tThe aguement should be passed in the following order [A,B,C,D].\n"
-               "\tThe bit fields are little Endian (start with right most bit).\n"
-               "\tIf a field's length value is set to 0 this field will be ignored.\n"
-               "\tDecimal values will be converted to hex to send to 5427ck driver."
-               "\n\tExample array:  [(0,8), (8,8), (16,8), (24, 8)]")
-        sys.exit(0)
+        usage()
 
     writeFile(argv)
 
@@ -191,10 +144,10 @@ def createPACS(args):
 		    keys = [1,20,100,2]
 	    formatValue[0]=choice(keys)
     
-    if formatValue[0] != 0:
-	    if (bitLength+trailingZeros)%8 != 0:
-		    trailingZeros = 8-(bitLength%8)
-		    print "trailing zeros automatically corrected for random format used" 
+	    if formatValue[0] != 0:
+		    if (bitLength+trailingZeros)%8 != 0:
+			    trailingZeros = 8-(bitLength%8)
+			    print "trailing zeros automatically corrected for random format used" 
 
     PACS = possibleFormats[formatValue[0]](args)
     return PACS
@@ -283,31 +236,32 @@ def h04(args):
 
 def h20(args):
     cardNumber = args[0]
+    bitLength = args[1]
     trailingZeros = args[4]
+
     print "h20"
     BCDdecimal =""
     for char in str(cardNumber):
 	BCDdecimal = BCDdecimal+bin(int(char))
     parity = BCDdecimal + '0000'
+
+    noLeadingZeros = parity    
     for x in range (0, trailingZeros):
-        parity = parity+'0'
-
-
-    noLeadingZeros = parity
+        noLeadingZeros = noLeadingZeros+'0'
 
     flag = False
-    for y in range(0, 32-len(BCDdecimal)):
-        parity = '0'+parity
+    for y in range(0, bitLength-len(parity)):
+        noLeadingZeros = '0'+noLeadingZeros
 	flag = True
     if(flag):
     	precedingZeros = y+1
     else:
 	precedingZeros = 0
 
-    PACS_bin = parity
+    PACS_bin = noLeadingZeros
 
     #def calculateTZField(PACS_bin, trailingZeros):
-    tzField = calculateTZField(PACS_bin,trailingZeros)
+    tzField = calculateTZField(PACS_bin, trailingZeros)
 
 #def leadingZeros(PACS_bin, noLeadingZeros, precedingZeros):
     PACS = leadingZeros(PACS_bin, noLeadingZeros, precedingZeros)
@@ -535,6 +489,55 @@ def contains (list, filter):
 		if filter (x):
 			return True
 	return False
+
+def usage():
+	print "usage:  iniCreator.py <cardNumber> <bitLength> <cardDataFormat> <activeCard> <trailingZeros> <outFileName> [customFields]\n"
+        print "CARD NUMBER:"
+        print ("\tCard ID number that will be translated to PACS bits based on bit length and card data format.\n"
+	       "\tThis is the ID you expect to see when the card is scanned.  For formats that include FAC and CN\n"
+               "\tthe FAC should be included in this number.\n")
+        print "BIT LENGTH:"
+        print "\tValue of number of bits on card.  Standard formats include - "
+        print "\t\tH10301 (26 bit)"
+        print "\t\tH10302 (37 bit)"
+        print "\t\tH10304 (37 bit)"
+        print "\t\tH10320 (32 bit)"
+        print "\t\tCorp 1000 (35 bit)\n"
+        print "CARD DATA FORMAT:"
+        print "\tArray of strings associated with card format and value."
+        print "\tCard format valid input:"
+        print "\t\tiClassFormat\n\t\tMifareFormat\n\t\tProxFormat\n\t\tSeosFormat"
+        print "\tvalue valid input:"
+        print "\t\t42 - Card Serial Number"
+        print "\t\t0 - Wiegand Raw"
+        print "\t\t1 - H10301"
+        print "\t\t2 - H10302"
+        print "\t\t4 - H10304"
+        print "\t\t20 - H10320"
+        print "\t\t100 - Corp 1000"
+        print "\t\t254 - Auto"
+        print "\t\t255 - Custom"
+	print "\tExample Array:  ['ProxFormat = 0', 'iClassFormat = 255']"
+        print "\tExample Array:  ['iClassFormat = 42', 'MifareFormat = 4',"
+	print "\t'ProxFormat = 254', 'SeosFormat = 100']\n"
+        print "ACTIVE CARD:"
+        print "\tCard type that is going to be used while testing."
+        print "\tExample:  iClass\n"
+        print "TRAILING ZEROS:"
+        print "\tNumber of zeros added to PACS bits.  Valid input range is [0,16]\n"
+        print "OUTFILE NAME:"
+        print "\tini file name to be created.  Example:  foo.ini\n"
+        print "CUSTOM FIELDS:"
+        print ("\toptional array to set CustomCardDataFormat Settings.\n"
+               "\tThe 4 fields include A,B,C,D which have a start bit value\n"
+               "\tand a length value.  These values should be in decimal and\n"
+               "\tare passed as a 2 item array of the form (start, length).\n"
+               "\tThe aguement should be passed in the following order [A,B,C,D].\n"
+               "\tThe bit fields are little Endian (start with right most bit).\n"
+               "\tIf a field's length value is set to 0 this field will be ignored.\n"
+               "\tDecimal values will be converted to hex to send to 5427ck driver."
+               "\n\tExample array:  [(0,8), (8,8), (16,8), (24, 8)]")
+	sys.exit(0)
      
 if __name__ == '__main__':
     iniCreator(sys.argv[1:])
