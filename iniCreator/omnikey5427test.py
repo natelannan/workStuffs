@@ -42,6 +42,7 @@ def testMatrix(args):
     successCases()
     failCases()
     proxSpecificCases()
+    sys.exit(0)
 
     os.system('read -s -n 1 -p "Place a Mifare card on top of the reader.  ' \
               'Press any key to continue..."')
