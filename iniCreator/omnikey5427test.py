@@ -26,7 +26,6 @@ def testMatrix(args):
 
     getApps()
     installApps()
-    print checkApps()
     if (not(checkApps())):
        print "Required apps are not present. \nPlease install readertest.fls, " \
              "omnikey5427ck.fls, and cardslotsim.fls.  "
@@ -87,11 +86,12 @@ def usage():
     print "\t\tWC - Winner's Circle"
     print "TELNET PORT:"
     print "\tport to communicate with cardslotsim and trigger a card event. default port is 13002\n"
-    print ("This program will test a matrix of success cases and failure cases for the Omnikey5427ck " \
-           "driver.  The program will prompt the user to place and remove the following card types from " \
-           "on top of the omnikey 5427ck reader: Prox, Seos, iClass, and Mifare.  The program installs " \
-           "the omnikey5427ck reader as well as the cardslotsim app to trigger card events.  The only " \
-           "necessary argument is an ipaddress.  If only an ip is given the defaults of HS and 13002 will be used.")
+    print ("This program will test a matrix of success cases and failure cases for the Omnikey5427ck \n" \
+           "driver.  The program will prompt the user to place and remove the following card types from \n" \
+           "on top of the omnikey 5427ck reader: Prox, Seos, iClass, and Mifare.  The program installs \n" \
+           "the omnikey5427ck reader as well as the cardslotsim app to trigger card events and \n" \
+           "readertest.fls to check card values.  The only necessary argument is an ipaddress.  If only \n" \
+           "an ipaddress is given the defaults will be used.\n")
     sys.exit(0)
     
     
