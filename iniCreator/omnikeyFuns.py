@@ -127,30 +127,35 @@ def successCases():
     
     #RAW
     globals.cardDataFormat = ['iClassFormat = 0', 'MifareFormat = 0', 'ProxFormat = 0', 'SeosFormat = 0']
+    globals.cardNumber = 1012345
     runTest()
 
     #H10301
     globals.bitLength = 26
     globals.trailingZeros = 6
     globals.cardDataFormat = ['iClassFormat = 1', 'MifareFormat = 1', 'ProxFormat = 1', 'SeosFormat = 1']
+    globals.cardNumber = 1012345
     runTest()
 
     #H10302
     globals.bitLength = 37
     globals.trailingZeros = 3
     globals.cardDataFormat = ['iClassFormat = 2', 'MifareFormat = 2', 'ProxFormat = 2', 'SeosFormat = 2']
+    globals.cardNumber = 1012345
     runTest()
 
     #H10304
     globals.bitLength = 37
     globals.trailingZeros = 3
     globals.cardDataFormat = ['iClassFormat = 4', 'MifareFormat = 4', 'ProxFormat = 4', 'SeosFormat = 4']
+    globals.cardNumber = 1012345
     runTest()
 
     #H10320
     globals.bitLength = 32
     globals.trailingZeros = 0
     globals.cardDataFormat = ['iClassFormat = 20', 'MifareFormat = 20', 'ProxFormat = 20', 'SeosFormat = 20']
+    globals.cardNumber = 1012345
     runTest()
 
     #Corp 1000
@@ -162,6 +167,7 @@ def successCases():
 
     #Auto
     globals.cardDataFormat = ['iClassFormat = 254', 'MifareFormat = 254', 'ProxFormat = 254', 'SeosFormat = 254']
+    globals.cardNumber = 1012345
     runTest()
 
     #Customer Defined
