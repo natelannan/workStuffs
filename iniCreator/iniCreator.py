@@ -20,15 +20,6 @@ import math
 from random import choice
 
 
-#Globals
-cardNumber = 0
-bitLength = 0
-cardDataFormat = ['iClass = 254', 'Mifare = 254', 'Prox = 254', 'Seos = 254']
-activeCard = 'Prox'
-trailingZeros = 6
-outFileName = "default.ini"
-customFields = [(0,0),(0,0),(0,0),(0,0)]
-
 class bitField:
 	def __init__(self, name='blank', startbit=0, length = 0, decValue = 0, binValue = '0'):
 		self.name = name		
@@ -93,28 +84,18 @@ def iniCreator(argv):
                "\n\tExample array:  [(0,8), (8,8), (16,8), (24, 8)]")
         sys.exit(0)
 
-    #Globals
-    global cardNumber
-    global bitLength
-    global cardDataFormat
-    global activeCard
-    global trailingZeros
-    global outFileName
-    global customFields
-    cardNumber = argv[0]
-    bitLength = argv[1]
-    cardDataFormat = argv[2]
-    activeCard = argv[3]
-    trailingZeros = argv[4]
-    outFileName = argv[5]
-    if (len(argv) == 7):
-        customFields = argv[6]
-
-    writeFile()
+    writeFile(argv)
 
 
     
-def writeFile():
+def writeFile(args):
+    outFileName = args[5]
+    cardDataFormat = args[2]
+    if (len(args) == 7):
+        customFields = args[6]
+    else:
+        customFields = [(0,0),(0,0),(0,0),(0,0)]
+        
     file = open(outFileName, "w+")
     
     #write standard fields
@@ -168,15 +149,18 @@ def writeFile():
     file.write("BitLength = "+str(hex(customFields[3][1]).lstrip("0x") or '0')+"\n\n")
 
     #create raw pacs bits
-    PACS = createPACS()
+    PACS = createPACS(args)
     print PACS
     file.write("[RawPACSBits]\n")
     file.write("PACSBits = "+PACS+"\n")
     file.close()
 
 
-def createPACS():
-    global trailingZeros
+def createPACS(args):
+    trailingZeros = args[4]
+    bitLength = args[1]
+    activeCard = args[3]
+    cardDataFormat = args[2]
     possibleFormats = {0   : raw,
                        1   : h01,
                        2   : h02,
@@ -212,11 +196,12 @@ def createPACS():
 		    trailingZeros = 8-(bitLength%8)
 		    print "trailing zeros automatically corrected for random format used" 
 
-
-    PACS = possibleFormats[formatValue[0]]()
+    PACS = possibleFormats[formatValue[0]](args)
     return PACS
 
-def raw():
+def raw(args):
+    cardNumber = args[0]
+    trailingZeros = args[4]
     print "raw"
     addedZeros = str(hex(cardNumber << trailingZeros).lstrip("0x") or '0')
     if (len(addedZeros) % 2) != 0:
@@ -231,25 +216,29 @@ def raw():
     PACS = tzField + addedZeros
     return PACS
 
-def h01():
+def h01(args):
+    cardNumber = args[0]
+    trailingZeros = args[4]
     print "h01"
     if len(str(cardNumber)) < 7:
         print "cardNumber is to short for H10301 Format.  No ini created"
         sys.exit (1) 
 
-#def fac_cn_formats(CNdigits, CNlength, FAClength, parityChange = False):
+#def fac_cn_formats(CNdigits, CNlength, FAClength, cardNumber, trailingZeros, parityChange = False):
 #   return [PACS_bin, noLeadingZeros, precedingZeros]
-    [PACS_bin, noLeadingZeros, precedingZeros] = fac_cn_formats(6, 16, 8)
+    [PACS_bin, noLeadingZeros, precedingZeros] = fac_cn_formats(6, 16, 8, cardNumber, trailingZeros = args[4] )
 
-#def calculateTZField(PACS_bin):
-    tzField = calculateTZField(PACS_bin)
+    #def calculateTZField(PACS_bin, trailingZeros):
+    tzField = calculateTZField(PACS_bin,trailingZeros)
 
 #def leadingZeros(PACS_bin, noLeadingZeros, precedingZeros):
     PACS = leadingZeros(PACS_bin, noLeadingZeros, precedingZeros)
    
     return tzField+PACS
 
-def h02():
+def h02(args):
+    cardNumber = args[0]
+    trailingZeros = args[4]
     print "h02"
     CN_bin = bin(cardNumber)
     parity = CN_bin + '0'
@@ -264,33 +253,37 @@ def h02():
 
     PACS_bin = '0'+parity
 
-#def calculateTZField(PACS_bin):
-    tzField = calculateTZField(PACS_bin)
+    #def calculateTZField(PACS_bin, trailingZeros):
+    tzField = calculateTZField(PACS_bin,trailingZeros)
 
 #def leadingZeros(PACS_bin, noLeadingZeros, precedingZeros):
     PACS = leadingZeros(PACS_bin, noLeadingZeros, precedingZeros)
    
     return tzField+PACS
 
-def h04():
+def h04(args):
+    cardNumber = args[0]
+    trailingZeros = args[4]
     print "h04"
     if len(str(cardNumber)) < 7:
         print "cardNumber is to short for H10304 Format.  No ini created"
         sys.exit (1) 
 
-#def fac_cn_formats(CNdigits, CNlength, FAClength, parityChange = False):
+#def fac_cn_formats(CNdigits, CNlength, FAClength, cardNumber, trailingZeros, parityChange = False):
 #   return [PACS_bin, noLeadingZeros, precedingZeros]
-    [PACS_bin, noLeadingZeros, precedingZeros] = fac_cn_formats(6, 19, 16)
+    [PACS_bin, noLeadingZeros, precedingZeros] = fac_cn_formats(6, 19, 16, cardNumber, trailingZeros = args[4])
 
-#def calculateTZField(PACS_bin):
-    tzField = calculateTZField(PACS_bin)
+    #def calculateTZField(PACS_bin, trailingZeros):
+    tzField = calculateTZField(PACS_bin,trailingZeros)
 
 #def leadingZeros(PACS_bin, noLeadingZeros, precedingZeros):
     PACS = leadingZeros(PACS_bin, noLeadingZeros, precedingZeros)
    
     return tzField+PACS
 
-def h20():
+def h20(args):
+    cardNumber = args[0]
+    trailingZeros = args[4]
     print "h20"
     BCDdecimal =""
     for char in str(cardNumber):
@@ -313,21 +306,22 @@ def h20():
 
     PACS_bin = parity
 
-#def calculateTZField(PACS_bin):
-    tzField = calculateTZField(PACS_bin)
+    #def calculateTZField(PACS_bin, trailingZeros):
+    tzField = calculateTZField(PACS_bin,trailingZeros)
 
 #def leadingZeros(PACS_bin, noLeadingZeros, precedingZeros):
     PACS = leadingZeros(PACS_bin, noLeadingZeros, precedingZeros)
    
     return tzField+PACS
 
-def csn():
+def csn(args):
     print "csn"
     print "no automated support for csn at this time."
     sys.exit(0)
 
-def corp():
-    global cardNumber
+def corp(args):
+    cardNumber = args[0]
+    trailingZeros = args[4]
     print "corp"
     if len(str(cardNumber)) < 9:
         print "cardNumber is to short for Corp1000 Format. No ini File Created."
@@ -337,20 +331,27 @@ def corp():
 #	print "New Card Number is: " + str(cardNumber)
          
 
-#def fac_cn_formats(CNdigits, CNlength, FAClength, parityChange = False):
+#def fac_cn_formats(CNdigits, CNlength, FAClength, cardNumber, trailingZeros, parityChange = False):
 #   return [PACS_bin, noLeadingZeros, precedingZeros]
-    [PACS_bin, noLeadingZeros, precedingZeros] = fac_cn_formats(8, 20, 12, True)
+    [PACS_bin, noLeadingZeros, precedingZeros] = fac_cn_formats(8, 20, 12, cardNumber, trailingZeros = args[4], parityChange = True)
 
 
-#def calculateTZField(PACS_bin):
-    tzField = calculateTZField(PACS_bin)
+    #def calculateTZField(PACS_bin, trailingZeros):
+    tzField = calculateTZField(PACS_bin,trailingZeros)
 
 
 #def leadingZeros(PACS_bin, noLeadingZeros, precedingZeros):
     PACS = leadingZeros(PACS_bin, noLeadingZeros, precedingZeros)
     return tzField+PACS
 
-def customer():
+def customer(args):
+    cardNumber = args[0]
+    bitLength = args[1]
+    trailingZeros = args[4]
+    if (len(args) == 7):
+        customFields = args[6]
+    else:
+        customFields = [(0,0),(0,0),(0,0),(0,0)]
     print "customer"
 
     bitFields = []
@@ -458,8 +459,8 @@ def customer():
 
     PACS_bin = binaryString
 
-    #def calculateTZField(PACS_bin):
-    tzField = calculateTZField(PACS_bin)
+    #def calculateTZField(PACS_bin, trailingZeros):
+    tzField = calculateTZField(PACS_bin,trailingZeros)
 
     #def leadingZeros(PACS_bin, noLeadingZeros, precedingZeros):
     PACS = leadingZeros(PACS_bin, noLeadingZeros, precedingZeros)
@@ -485,7 +486,7 @@ def leadingZeros(PACS_bin, noLeadingZeros, precedingZeros):
             PACS = '0'+PACS
     return PACS
     
-def calculateTZField(PACS_bin):
+def calculateTZField(PACS_bin, trailingZeros):
     if (len(PACS_bin)%8 !=0):
 	print ("Warning:  Number of trailing zeros will not generate a bit length that is a multiple of 8.\n"
                "Errors in calculating user's card number from PACS bits will occur.")
@@ -499,7 +500,7 @@ def calculateTZField(PACS_bin):
         sys.exit(1)
     return tzField
 
-def fac_cn_formats(CNdigits, CNlength, FAClength, parityChange = False):
+def fac_cn_formats(CNdigits, CNlength, FAClength, cardNumber, trailingZeros, parityChange = False):
     CN = int(str(cardNumber)[len(str(cardNumber))-CNdigits:])
     FAC = int(str(cardNumber)[:len(str(cardNumber))-CNdigits])
     CN_bin = bin(CN)
