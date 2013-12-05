@@ -91,7 +91,8 @@ def usage():
            "on top of the omnikey 5427ck reader: Prox, Seos, iClass, and Mifare.  The program installs \n" \
            "the omnikey5427ck reader as well as the cardslotsim app to trigger card events and \n" \
            "readertest.fls to check card values.  The only necessary argument is an ipaddress.  If only \n" \
-           "an ipaddress is given the defaults will be used.\n")
+           "an ipaddress is given the defaults will be used.  This program must be run from a linux machine \n" \
+           "with python 2.7.3 installed.\n")
     sys.exit(0)
     
     
