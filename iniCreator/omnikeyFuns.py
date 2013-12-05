@@ -12,7 +12,7 @@ import globals
 
 
 def getApps():
-    subprocess.call("smbclient -U autouser " + WINSHARE + " -c \"get nlannan\\5427ckApps.zip\" Fn4WNus2T", shell=True)
+    subprocess.call("smbclient -U autouser " + globals.WINSHARE + " -c \"get nlannan\\5427ckApps.zip\" Fn4WNus2T", shell=True)
     subprocess.call("unzip -d 5427ckApps nlannan\\\\5427ckApps.zip", shell=True)
     subprocess.call("rm nlannan\\\\5427ckApps.zip", shell=True)
 
@@ -54,21 +54,21 @@ def runTest():
     deleteEsfLog()
     swipeCard()
     userID = parseEsfLog()
-    if int(userID) == cardNumber:
-        print "cardNumber = \t"+ str(cardNumber)+"\nuserID = \t"+userID+"\n\nPASS"
+    if int(userID) == globals.cardNumber:
+        print "cardNumber = \t"+ str(globals.cardNumber)+"\nuserID = \t"+userID+"\n\nPASS"
     else:
-        print "cardNumber = \t"+ str(cardNumber)+"\nuserID = \t"+userID+"\n\nFAIL"
+        print "cardNumber = \t"+ str(globals.cardNumber)+"\nuserID = \t"+userID+"\n\nFAIL"
 
 
 def loadIni():
-    iniArgs = [cardNumber, bitLength, cardDataFormat, activeCard, trailingZeros, outFileName, customFields]
+    iniArgs = [globals.cardNumber, globals.bitLength, globals.cardDataFormat, globals.activeCard, globals.trailingZeros, globals.outFileName, globals.customFields]
 
     iniCreator(iniArgs)
 
-    if (printerFamily == 'HS'):
-        curlSessionCmd = "curl -D - \"http://"+ipAddress+"/cgi-bin/direct/printer/prtappauth/admin/adminservlet\""
-    elif (printerFamily == 'WC'):
-        curlSessionCmd = "curl -D - \"http://"+ipAddress+"/cgi-bin/direct/printer/prtappauth/admin/adminservlet" \
+    if (globals.printerFamily == 'HS'):
+        curlSessionCmd = "curl -D - \"http://"+globals.ipAddress+"/cgi-bin/direct/printer/prtappauth/admin/adminservlet\""
+    elif (globals.printerFamily == 'WC'):
+        curlSessionCmd = "curl -D - \"http://"+globals.ipAddress+"/cgi-bin/direct/printer/prtappauth/admin/adminservlet" \
                          "?SelectedAppsNames=omnikey5427ckdriver\""
     else:
         print "Printer Family not recognized."
@@ -82,35 +82,35 @@ def loadIni():
     else:
         print "could not find Cookie for session start"
         sys.exit(1)
-    curlStartCmd = "curl \'http://"+ipAddress+"/cgi-bin/direct/printer/prtappauth/admin/appservlet?" \
-                   "SelectedAppsNames=omnikey5427ckdriver\' -H \'Referer: http://"+ipAddress+ \
+    curlStartCmd = "curl \'http://"+globals.ipAddress+"/cgi-bin/direct/printer/prtappauth/admin/appservlet?" \
+                   "SelectedAppsNames=omnikey5427ckdriver\' -H \'Referer: http://"+globals.ipAddress+ \
                    "/cgi-bin/direct/printer/prtappauth/admin/\' -H \'Cookie: JSESSIONID="+sessionValue+ \
                    "\' -H \'Connection: keep-alive\'"
     curlStartArgs=shlex.split(curlStartCmd)
     curlStart, err = subprocess.Popen(curlStartArgs, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
 
-    curlSendCmd = "curl -H \"Cookie: JSESSIONID="+sessionValue+"\" -F settings.inifile=@"+outFileName+" http://" \
-    +ipAddress+"/cgi-bin/direct/printer/prtappauth/admin/configureokservlet"
+    curlSendCmd = "curl -H \"Cookie: JSESSIONID="+sessionValue+"\" -F settings.inifile=@"+globals.outFileName+" http://" \
+    +globals.ipAddress+"/cgi-bin/direct/printer/prtappauth/admin/configureokservlet"
     curlSendArgs= shlex.split(curlSendCmd)
     curlSend, err = subprocess.Popen(curlSendArgs, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
 
 def deleteEsfLog():
-    curlDebugCmd = "curl \'http://"+ipAddress+"/cgi-bin/direct/printer/prtappse/semenu?loglevel=debug&page=setloglevel\'"
+    curlDebugCmd = "curl \'http://"+globals.ipAddress+"/cgi-bin/direct/printer/prtappse/semenu?loglevel=debug&page=setloglevel\'"
     curlDebugArgs = shlex.split(curlDebugCmd)
     curlDebug, err = subprocess.Popen(curlDebugArgs, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
-    curlClearCmd = "curl \'http://"+ipAddress+"/cgi-bin/direct/printer/prtappse/semenu?clearlogconfirmation=Yes&page=clearlog\'"
+    curlClearCmd = "curl \'http://"+globals.ipAddress+"/cgi-bin/direct/printer/prtappse/semenu?clearlogconfirmation=Yes&page=clearlog\'"
     curlClearArgs = shlex.split(curlClearCmd)
     curlClear, err = subprocess.Popen(curlClearArgs, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
 
 def swipeCard():
-    tn =telnetlib.Telnet(ipAddress, telnetPort)
+    tn =telnetlib.Telnet(globals.ipAddress, globals.telnetPort)
     tn.write('i')
     sleep(2)
     tn.write('o')
     tn.close()
 
 def parseEsfLog():
-    esfLog = "http://"+ipAddress+"/cgi-bin/script/printer/prtapplog"
+    esfLog = "http://"+globals.ipAddress+"/cgi-bin/script/printer/prtapplog"
     userID = parser(esfLog)
     return userID
 
@@ -126,46 +126,44 @@ def parser (searchFile):
     return userID
 
 def successCases():
-    global cardNumber, bitLength, cardDataFormat
-    global trailingZeros
     
     #RAW
-    cardDataFormat = ['iClassFormat = 0', 'MifareFormat = 0', 'ProxFormat = 0', 'SeosFormat = 0']
+    globals.cardDataFormat = ['iClassFormat = 0', 'MifareFormat = 0', 'ProxFormat = 0', 'SeosFormat = 0']
     runTest()
 
     #H10301
-    bitLength = 26
-    trailingZeros = 6
-    cardDataFormat = ['iClassFormat = 1', 'MifareFormat = 1', 'ProxFormat = 1', 'SeosFormat = 1']
+    globals.bitLength = 26
+    globals.trailingZeros = 6
+    globals.cardDataFormat = ['iClassFormat = 1', 'MifareFormat = 1', 'ProxFormat = 1', 'SeosFormat = 1']
     runTest()
 
     #H10302
-    bitLength = 37
-    trailingZeros = 3
-    cardDataFormat = ['iClassFormat = 2', 'MifareFormat = 2', 'ProxFormat = 2', 'SeosFormat = 2']
+    globals.bitLength = 37
+    globals.trailingZeros = 3
+    globals.cardDataFormat = ['iClassFormat = 2', 'MifareFormat = 2', 'ProxFormat = 2', 'SeosFormat = 2']
     runTest()
 
     #H10304
-    bitLength = 37
-    trailingZeros = 3
-    cardDataFormat = ['iClassFormat = 4', 'MifareFormat = 4', 'ProxFormat = 4', 'SeosFormat = 4']
+    globals.bitLength = 37
+    globals.trailingZeros = 3
+    globals.cardDataFormat = ['iClassFormat = 4', 'MifareFormat = 4', 'ProxFormat = 4', 'SeosFormat = 4']
     runTest()
 
     #H10320
-    bitLength = 32
-    trailingZeros = 0
-    cardDataFormat = ['iClassFormat = 20', 'MifareFormat = 20', 'ProxFormat = 20', 'SeosFormat = 20']
+    globals.bitLength = 32
+    globals.trailingZeros = 0
+    globals.cardDataFormat = ['iClassFormat = 20', 'MifareFormat = 20', 'ProxFormat = 20', 'SeosFormat = 20']
     runTest()
 
     #Corp 1000
-    bitLength = 35
-    trailingZeros = 5
-    cardDataFormat = ['iClassFormat = 100', 'MifareFormat = 100', 'ProxFormat = 100', 'SeosFormat = 100']
-    cardNumber = 101234567
+    globals.bitLength = 35
+    globals.trailingZeros = 5
+    globals.cardDataFormat = ['iClassFormat = 100', 'MifareFormat = 100', 'ProxFormat = 100', 'SeosFormat = 100']
+    globals.cardNumber = 101234567
     runTest()
 
     #Auto
-    cardDataFormat = ['iClassFormat = 254', 'MifareFormat = 254', 'ProxFormat = 254', 'SeosFormat = 254']
+    globals.cardDataFormat = ['iClassFormat = 254', 'MifareFormat = 254', 'ProxFormat = 254', 'SeosFormat = 254']
     runTest()
 
     #Customer Defined
