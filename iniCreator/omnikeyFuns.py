@@ -17,21 +17,19 @@ def getApps():
     subprocess.call("rm nlannan\\\\5427ckApps.zip", shell=True)
 
 def installApps():
-    subprocess.call (sendtcp+" " + globals.ipAddress +" "+ "5427ckApps/cardslotsim.fls", shell=True)
-    subprocess.call (sendtcp+" " + globals.ipAddress +" "+ "5427ckApps/readertest.fls", shell=True)
-    subprocess.call (sendtcp+" " + globals.ipAddress +" "+ "5427ckApps/omnikey5427ck.fls", shell=True)
+    subprocess.call (globals.sendtcp+" " + globals.ipAddress +" "+ "5427ckApps/cardslotsim.fls", shell=True)
+    subprocess.call (globals.sendtcp+" " + globals.ipAddress +" "+ "5427ckApps/readertest.fls", shell=True)
+    subprocess.call (globals.sendtcp+" " + globals.ipAddress +" "+ "5427ckApps/omnikey5427ck.fls", shell=True)
     sleep(10)
 
 def checkApps():
     curlSessionCmd = "curl http://"+globals.ipAddress+"/cgi-bin/dynamic/printer/config/reports/MenusPage.html"
     curlSessionArgs= shlex.split(curlSessionCmd)
     curlSession, err  = subprocess.Popen(curlSessionArgs,stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
-    print globals.ipAddress
     cardslotPattern = re.compile(r".*Card Slot Simulation.*")
     omnikeyPattern = re.compile(r".*Omnikey 5427ck Reader Driver.*")
     readerPattern = re.compile(r".*Reader Test.*")
     cardslotLine = cardslotPattern.search(curlSession)
-    print cardslotLine
     if cardslotLine:
         omnikeyLine = omnikeyPattern.search(curlSession)
         if omnikeyLine:
