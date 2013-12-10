@@ -24,13 +24,16 @@ def testMatrix(args):
 
     globals.init(args)
 
-    getApps()
-    installApps()
+    print "Checking for required apps.  If not installed, program will attempt to " \
+          "install."
     if (not(checkApps())):
-       print "Required apps are not present. \nPlease install readertest.fls, " \
-             "omnikey5427ck.fls, and cardslotsim.fls.  "
-       cleanUp()
-       sys.exit(0)
+        getApps()
+        installApps()
+        if (not(checkApps())):
+            print "Required apps are not present. \nPlease install readertest.fls, " \
+                  "omnikey5427ck.fls, and cardslotsim.fls.  "
+            cleanUp()
+            sys.exit(0)
     
     
     os.system('read -s -n 1 -p "Connect Omnikey 5427ck reader if not connected ' +
