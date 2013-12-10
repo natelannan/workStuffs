@@ -103,7 +103,6 @@ def writeFile(args):
 
     #create raw pacs bits
     PACS = createPACS(args)
-    print PACS
     file.write("[RawPACSBits]\n")
     file.write("PACSBits = "+PACS+"\n")
     file.close()
@@ -119,7 +118,7 @@ def createPACS(args):
                        2   : h02,
                        4   : h04,
                        20  : h20,
-                       42  : csn,
+                       253 : csn,
                        100 : corp,
                        255 : customer,
     }
@@ -155,7 +154,6 @@ def createPACS(args):
 def raw(args):
     cardNumber = args[0]
     trailingZeros = args[4]
-    print "raw"
     addedZeros = str(hex(cardNumber << trailingZeros).lstrip("0x") or '0')
     if (len(addedZeros) % 2) != 0:
         addedZeros = '0'+addedZeros
@@ -172,7 +170,6 @@ def raw(args):
 def h01(args):
     cardNumber = args[0]
     trailingZeros = args[4]
-    print "h01"
     if len(str(cardNumber)) < 7:
         print "cardNumber is to short for H10301 Format.  No ini created"
         sys.exit (1) 
@@ -192,7 +189,6 @@ def h01(args):
 def h02(args):
     cardNumber = args[0]
     trailingZeros = args[4]
-    print "h02"
     CN_bin = bin(cardNumber)
     parity = CN_bin + '0'
     for x in range (0, trailingZeros):
@@ -217,7 +213,6 @@ def h02(args):
 def h04(args):
     cardNumber = args[0]
     trailingZeros = args[4]
-    print "h04"
     if len(str(cardNumber)) < 7:
         print "cardNumber is to short for H10304 Format.  No ini created"
         sys.exit (1) 
@@ -239,7 +234,7 @@ def h20(args):
     bitLength = args[1]
     trailingZeros = args[4]
 
-    print "h20"
+
     BCDdecimal =""
     for char in str(cardNumber):
 	BCDdecimal = BCDdecimal+bin(int(char))
@@ -276,7 +271,6 @@ def csn(args):
 def corp(args):
     cardNumber = args[0]
     trailingZeros = args[4]
-    print "corp"
     if len(str(cardNumber)) < 9:
         print "cardNumber is to short for Corp1000 Format. No ini File Created."
 	sys.exit(1)
@@ -306,7 +300,6 @@ def customer(args):
         customFields = args[6]
     else:
         customFields = [(0,0),(0,0),(0,0),(0,0)]
-    print "customer"
 
     bitFields = []
     for x in range(0,4):
@@ -367,6 +360,7 @@ def customer(args):
     maxDigits=0
     for x in sortedFields:
         maxDigits = maxDigits + x.digits
+
 
     cardNumWithZeros = str(cardNumber)
     for x in range(0,maxDigits-len(str(cardNumber))):
