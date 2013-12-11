@@ -52,7 +52,7 @@ def runTest(outSwapped=False, outInHex=False):
     inHexidecimal = 'false'
     outputSwap = 'false'
     if outInHex:
-        compare = str(hex(compare).lstrip("0x") or '0').upper()
+        compare = str(hex(int(compare)).lstrip("0x") or '0').upper()
         inHexidecimal = 'true'
     if outSwapped:
         compare = 'stub'
@@ -66,10 +66,10 @@ def runTest(outSwapped=False, outInHex=False):
     userID = parseEsfLog()
 
 
-    if userID == str(compare):
-        print "cardNumber = \t"+ str(compare)+"\nuserID = \t"+userID+"\n\nPASS"
+    if userID == compare:
+        print "cardNumber = \t"+ compare+"\nuserID = \t"+userID+"\n\nPASS"
     else:
-        print "cardNumber = \t"+ str(compare)+"\nuserID = \t"+userID+"\n\nFAIL"
+        print "cardNumber = \t"+ compare+"\nuserID = \t"+userID+"\n\nFAIL"
         #sys.exit(1)
 
 
@@ -184,9 +184,10 @@ def parser (searchFile):
     return userID
 
 def successCases():
+    '''
     #RAW
     globals.cardDataFormat = ['iClassFormat = 0', 'MifareFormat = 0', 'ProxFormat = 0', 'SeosFormat = 0']
-    globals.cardNumber = 1012345
+    globals.cardNumber = '1012345'
     print "Normal Case:"
     runTest()
     print "Output in Hex:"
@@ -196,10 +197,10 @@ def successCases():
     print "Output in Hex and swapped:"
     runTest(outInHex=True, outSwapped=True)
    # print "Max Value:"
-   # globals.cardNumber = 
+   # globals.cardNumber = '' 
    # runTest()
-    print "Min Value:"
-    globals.cardNumber = 0
+   # print "Min Value:"
+   # globals.cardNumber = '0'
     runTest()
                       
 
@@ -207,7 +208,7 @@ def successCases():
     globals.bitLength = 26
     globals.trailingZeros = 6
     globals.cardDataFormat = ['iClassFormat = 1', 'MifareFormat = 1', 'ProxFormat = 1', 'SeosFormat = 1']
-    globals.cardNumber = 1012345
+    globals.cardNumber = '1012345'
     print "Normal Case:"
     runTest()
     print "Output in Hex:"
@@ -216,18 +217,18 @@ def successCases():
     runTest(outSwapped=True)
     print "Output in Hex and swapped:"
     runTest(outInHex=True, outSwapped=True)
-    print "Max Value:"
-    globals.cardNumber = 255065535
-    runTest()
-    print "Min Value:"
-    globals.cardNumber = 0000000
-    runTest()
+    #print "Max Value:"
+    #globals.cardNumber = '255065535'
+    #runTest()
+    #print "Min Value:"
+    #globals.cardNumber = '0000000'
+    #runTest()
 
     #H10302
     globals.bitLength = 37
     globals.trailingZeros = 3
     globals.cardDataFormat = ['iClassFormat = 2', 'MifareFormat = 2', 'ProxFormat = 2', 'SeosFormat = 2']
-    globals.cardNumber = 1012345
+    globals.cardNumber = '1012345'
     print "Normal Case:"
     runTest()
     print "Output in Hex:"
@@ -236,18 +237,18 @@ def successCases():
     runTest(outSwapped=True)
     print "Output in Hex and swapped:"
     runTest(outInHex=True, outSwapped=True)
-    print "Max Value:"
-    globals.cardNumber = 34359738367
-    runTest()
-    print "Min Value:"
-    globals.cardNumber = 000000000000
-    runTest()
+    #print "Max Value:"
+    #globals.cardNumber = '34359738367'
+    #runTest()
+    #print "Min Value:"
+    #globals.cardNumber = '000000000000'
+    #runTest()
 
     #H10304
     globals.bitLength = 37
     globals.trailingZeros = 3
     globals.cardDataFormat = ['iClassFormat = 4', 'MifareFormat = 4', 'ProxFormat = 4', 'SeosFormat = 4']
-    globals.cardNumber = 1012345
+    globals.cardNumber = '1012345'
     print "Normal Case:"
     runTest()
     print "Output in Hex:"
@@ -256,22 +257,22 @@ def successCases():
     runTest(outSwapped=True)
     print "Output in Hex and swapped:"
     runTest(outInHex=True, outSwapped=True)
-    print "Max Value:"
-    globals.cardNumber = 65535524287 
-    runTest()
-    print "Min Value:"
-    globals.cardNumber = 00000000000
-    runTest()
+    #print "Max Value:"
+    #globals.cardNumber = '65535524287' 
+    #runTest()
+    #print "Min Value:"
+    #globals.cardNumber = '0000000'
+    #runTest()
+    '''
    
-    '''
+    
     #H10320 - Currently causes crash DE28368 
-    globals.bitLength = 32
-    globals.trailingZeros = 0
+    globals.bitLength = 36
+    globals.trailingZeros = 4
     globals.cardDataFormat = ['iClassFormat = 20', 'MifareFormat = 20', 'ProxFormat = 20', 'SeosFormat = 20']
-    globals.cardNumber = 1012345
+    globals.cardNumber = '1012345'
     print "Normal Case:"
     runTest()
-    sys.exit(0)
     print "Output in Hex:"
     runTest(outInHex=True)
     print "Output swapped:"
@@ -279,18 +280,18 @@ def successCases():
     print "Output in Hex and swapped:"
     runTest(outInHex=True, outSwapped=True)
     print "Max Value:"
-    globals.cardNumber = 4294967295  # this is not right find out
+    globals.cardNumber = '99999999'
     runTest()
-    print "Min Value:"
-    globals.cardNumber = 00000000
-    runTest()
+    #print "Min Value:"
+    #globals.cardNumber = 0
+    #runTest()
+    
     '''
-
     #Corp 1000
     globals.bitLength = 35
     globals.trailingZeros = 5
     globals.cardDataFormat = ['iClassFormat = 100', 'MifareFormat = 100', 'ProxFormat = 100', 'SeosFormat = 100']
-    globals.cardNumber = 100012345
+    globals.cardNumber = '100012345'
     print "Normal Case:"
     runTest()
     print "Output in Hex:"
@@ -299,17 +300,18 @@ def successCases():
     runTest(outSwapped=True)
     print "Output in Hex and swapped:"
     runTest(outInHex=True, outSwapped=True)
-    print "Max Value:"
-    globals.cardNumber = 409501048575
-    runTest()
-    print "Min Value:"
-    globals.cardNumber = 000000000000
-    runTest()
+    #print "Max Value:"
+    #globals.cardNumber = '409501048575'
+    #runTest()
+    #print "Min Value:"
+    #globals.cardNumber = '000000000'
+    #runTest()
+    '''
 
     '''
     #Auto
     #globals.cardDataFormat = ['iClassFormat = 254', 'MifareFormat = 254', 'ProxFormat = 254', 'SeosFormat = 254']
-    #globals.cardNumber = 1012345
+    #globals.cardNumber = '1012345'
     #print "Normal Case:"
     #runTest()
     #print "Output in Hex:"
@@ -323,7 +325,7 @@ def successCases():
     #Currently causes crash - DE28378
     #Customer Defined
     globals.cardDataFormat = ['iClassFormat = 255', 'MifareFormat = 255', 'ProxFormat = 255', 'SeosFormat = 255']
-    globals.cardNumber = 1012345
+    globals.cardNumber = '1012345'
     globals.customFields = [(0,20),(0,0),(0,0),(0,0)]
     globals.trailingZeros = 4
     globals.bitLength = 20
