@@ -154,7 +154,7 @@ def createPACS(args):
 def raw(args):
     cardNumber = args[0]
     trailingZeros = args[4]
-    addedZeros = str(hex(cardNumber << trailingZeros).lstrip("0x") or '0')
+    addedZeros = str(hex(int(cardNumber) << trailingZeros).lstrip("0x") or '0')
     if (len(addedZeros) % 2) != 0:
         addedZeros = '0'+addedZeros
     if trailingZeros <16:
@@ -170,7 +170,7 @@ def raw(args):
 def h01(args):
     cardNumber = args[0]
     trailingZeros = args[4]
-    if len(str(cardNumber)) < 7:
+    if len(cardNumber) < 7:
         print "cardNumber is to short for H10301 Format.  No ini created"
         sys.exit (1) 
 
@@ -189,7 +189,7 @@ def h01(args):
 def h02(args):
     cardNumber = args[0]
     trailingZeros = args[4]
-    CN_bin = bin(cardNumber)
+    CN_bin = bin(int(cardNumber))
     parity = CN_bin + '0'
     for x in range (0, trailingZeros):
         parity = parity+'0'
@@ -213,7 +213,7 @@ def h02(args):
 def h04(args):
     cardNumber = args[0]
     trailingZeros = args[4]
-    if len(str(cardNumber)) < 7:
+    if len(cardNumber) < 7:
         print "cardNumber is to short for H10304 Format.  No ini created"
         sys.exit (1) 
 
@@ -236,9 +236,23 @@ def h20(args):
 
 
     BCDdecimal =""
-    for char in str(cardNumber):
-	BCDdecimal = BCDdecimal+bin(int(char))
-    parity = BCDdecimal + '0000'
+    ones = [0]*4
+    parity = ''
+    for char in cardNumber:
+        binDec = bin(int(char))
+	for x in range(0,4-len(binDec)):
+		binDec = '0'+binDec
+	ones[0] = ones[0] + binDec[1:4].count('1')
+	ones[1] = ones[1] + (binDec[0]+binDec[2:4]).count('1')
+	ones[2] = ones[2] + (binDec[0:2]+binDec[3]).count('1')
+	ones[3] = ones[3] + binDec[0:3].count('1')
+	BCDdecimal = BCDdecimal+binDec
+    for x in range(0,4):
+        if x == 1:
+		parity = parity+'1' if ones[x] % 2 == 0 else parity+'0'
+	else:
+		parity = parity+'0' if ones[x] % 2 == 0 else parity+'1'
+    parity = BCDdecimal + parity
 
     noLeadingZeros = parity    
     for x in range (0, trailingZeros):
@@ -253,14 +267,14 @@ def h20(args):
     else:
 	precedingZeros = 0
 
-    PACS_bin = noLeadingZeros
 
+    PACS_bin = noLeadingZeros
     #def calculateTZField(PACS_bin, trailingZeros):
     tzField = calculateTZField(PACS_bin, trailingZeros)
 
 #def leadingZeros(PACS_bin, noLeadingZeros, precedingZeros):
     PACS = leadingZeros(PACS_bin, noLeadingZeros, precedingZeros)
-   
+    
     return tzField+PACS
 
 def csn(args):
@@ -271,7 +285,7 @@ def csn(args):
 def corp(args):
     cardNumber = args[0]
     trailingZeros = args[4]
-    if len(str(cardNumber)) < 9:
+    if len(cardNumber) < 9:
         print "cardNumber is to short for Corp1000 Format. No ini File Created."
 	sys.exit(1)
 #	for x in range(0,(9-len(str(cardNumber)))):
@@ -332,7 +346,7 @@ def customer(args):
             minDigits = minDigits + x.digits
     minDigits = minDigits +1  #add one for last field.  This is the smallest value that cardNumber can have 
 
-    if (len(str(cardNumber)) < minDigits):
+    if (len(cardNumber) < minDigits):
         print "Card number is not large enough for bit fields"
         sys.exit(1)
     
@@ -362,8 +376,8 @@ def customer(args):
         maxDigits = maxDigits + x.digits
 
 
-    cardNumWithZeros = str(cardNumber)
-    for x in range(0,maxDigits-len(str(cardNumber))):
+    cardNumWithZeros = cardNumber
+    for x in range(0,maxDigits-len(cardNumber)):
         cardNumWithZeros = '0'+cardNumWithZeros
 
 
@@ -449,8 +463,8 @@ def calculateTZField(PACS_bin, trailingZeros):
     return tzField
 
 def fac_cn_formats(CNdigits, CNlength, FAClength, cardNumber, trailingZeros, parityChange = False):
-    CN = int(str(cardNumber)[len(str(cardNumber))-CNdigits:])
-    FAC = int(str(cardNumber)[:len(str(cardNumber))-CNdigits])
+    CN = int(cardNumber[len(cardNumber)-CNdigits:])
+    FAC = int(cardNumber[:len(cardNumber)-CNdigits])
     CN_bin = bin(CN)
     for x in range(0, CNlength-len(CN_bin)):
         CN_bin = '0'+CN_bin
@@ -487,7 +501,7 @@ def contains (list, filter):
 def usage():
 	print "usage:  iniCreator.py <cardNumber> <bitLength> <cardDataFormat> <activeCard> <trailingZeros> <outFileName> [customFields]\n"
         print "CARD NUMBER:"
-        print ("\tCard ID number that will be translated to PACS bits based on bit length and card data format.\n"
+        print ("\tA string of the card ID number that will be translated to PACS bits based on bit length and card data format.\n"
 	       "\tThis is the ID you expect to see when the card is scanned.  For formats that include FAC and CN\n"
                "\tthe FAC should be included in this number.\n")
         print "BIT LENGTH:"
