@@ -16,7 +16,7 @@ def init(args):
         ipAddress = args[0]
         printerFamily = args[1]
         telnetPort = args[2]
-    cardNumber = 1012345
+    cardNumber = '1012345'
     bitLength = 26
     #H01 = 26
     #H02 = 37
