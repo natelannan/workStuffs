@@ -100,11 +100,17 @@ def writeFile(args):
     file.write("[CustomProxFormat-D]\n")
     file.write("StartBit = "+str(hex(customFields[3][0]).lstrip("0x") or '0')+"\n")
     file.write("BitLength = "+str(hex(customFields[3][1]).lstrip("0x") or '0')+"\n\n")
-
+    
+    
     #create raw pacs bits
     PACS = createPACS(args)
     file.write("[RawPACSBits]\n")
-    file.write("PACSBits = "+PACS+"\n")
+    file.write("PACSBits = "+PACS+"\n\n")
+
+    #create CSN bits if in CSN mode
+    CSNbits = createCSN(args)
+    file.write("[RawUIDBits]\n")
+    file.write("UIDBits = "+CSNbits+"\n")
     file.close()
 
 
@@ -118,8 +124,8 @@ def createPACS(args):
                        2   : h02,
                        4   : h04,
                        20  : h20,
-                       253 : csn,
                        100 : corp,
+		       253 : csn,
                        255 : customer,
     }
                        
@@ -148,8 +154,27 @@ def createPACS(args):
 			    trailingZeros = 8-(bitLength%8)
 			    print "trailing zeros automatically corrected for random format used" 
 
-    PACS = possibleFormats[formatValue[0]](args)
+    if formatValue[0] == 253:
+	    PACS = '0000'
+    else:
+	    PACS = possibleFormats[formatValue[0]](args)
     return PACS
+
+def createCSN(args):
+    activeCard = args[3]
+    cardDataFormat = args[2]
+
+    filteredList = filter(lambda x: activeCard in x, cardDataFormat)
+    if filteredList:
+        formatValue = [int(s) for s in filteredList[0].split() if s.isdigit()]
+    else:
+        print "active card value not found."
+        sys.exit(1)
+    if formatValue[0] == 253:
+        CSNbits = csn(args)
+    else:
+        CSNbits = '0000000000000000'
+    return CSNbits
 
 def raw(args):
     cardNumber = args[0]
@@ -170,7 +195,8 @@ def raw(args):
 def h01(args):
     cardNumber = args[0]
     trailingZeros = args[4]
-    if len(cardNumber) < 7:
+    minDigits = 7
+    if len(cardNumber) < minDigits:
         print "cardNumber is to short for H10301 Format.  No ini created"
         sys.exit (1) 
 
@@ -213,7 +239,8 @@ def h02(args):
 def h04(args):
     cardNumber = args[0]
     trailingZeros = args[4]
-    if len(cardNumber) < 7:
+    minDigits = 7
+    if len(cardNumber) < minDigits:
         print "cardNumber is to short for H10304 Format.  No ini created"
         sys.exit (1) 
 
@@ -278,14 +305,16 @@ def h20(args):
     return tzField+PACS
 
 def csn(args):
-    print "csn"
-    print "no automated support for csn at this time."
-    sys.exit(0)
+    cardNumber = args[0]
+    addedZeros = str(hex(int(cardNumber)).lstrip("0x") or '0')
+    CSNbits = addedZeros
+    return CSNbits
 
 def corp(args):
     cardNumber = args[0]
     trailingZeros = args[4]
-    if len(cardNumber) < 9:
+    minDigits = 9
+    if len(cardNumber) < minDigits:
         print "cardNumber is to short for Corp1000 Format. No ini File Created."
 	sys.exit(1)
 #	for x in range(0,(9-len(str(cardNumber)))):
@@ -433,7 +462,11 @@ def bin(s):
     return str(s) if s<=1 else bin(s>>1) + str(s&1)
 
 def leadingZeros(PACS_bin, noLeadingZeros, precedingZeros):
-    PACS = "%x" % int(PACS_bin, 2)
+    numChars = (len(PACS_bin)+3)/4
+    insertZeros = "%%0%dx" %numChars
+    PACS = insertZeros % int(PACS_bin, 2)
+    '''
+    print PACS
     PACSbitPos = len(PACS_bin)%4
     if (PACSbitPos == 0):
 	PACSbitPos = 4
@@ -446,7 +479,10 @@ def leadingZeros(PACS_bin, noLeadingZeros, precedingZeros):
     else:
     	for x in range (0,int(math.ceil(float(precedingZeros)/float(4)))):
             PACS = '0'+PACS
+    print PACS
+    '''
     return PACS
+    
     
 def calculateTZField(PACS_bin, trailingZeros):
     if (len(PACS_bin)%8 !=0):
