@@ -186,25 +186,27 @@ def parser (searchFile):
 def successCases():
     '''
     #RAW
+    print "Raw Format"
     globals.cardDataFormat = ['iClassFormat = 0', 'MifareFormat = 0', 'ProxFormat = 0', 'SeosFormat = 0']
     globals.cardNumber = '1012345'
     print "Normal Case:"
     runTest()
     print "Output in Hex:"
     runTest(outInHex=True)
-    print "Output swapped:"
-    runTest(outSwapped=True)
-    print "Output in Hex and swapped:"
-    runTest(outInHex=True, outSwapped=True)
-   # print "Max Value:"
-   # globals.cardNumber = '' 
-   # runTest()
-   # print "Min Value:"
-   # globals.cardNumber = '0'
+    #print "Output swapped:"
+    #runTest(outSwapped=True)
+    #print "Output in Hex and swapped:"
+    #runTest(outInHex=True, outSwapped=True)
+    print "Max Value:"
+    globals.cardNumber = str((2**57)-1) 
+    runTest()
+    print "Min Value:"
+    globals.cardNumber = '0'
     runTest()
                       
-
+    
     #H10301
+    print "H10301"
     globals.bitLength = 26
     globals.trailingZeros = 6
     globals.cardDataFormat = ['iClassFormat = 1', 'MifareFormat = 1', 'ProxFormat = 1', 'SeosFormat = 1']
@@ -213,18 +215,19 @@ def successCases():
     runTest()
     print "Output in Hex:"
     runTest(outInHex=True)
-    print "Output swapped:"
-    runTest(outSwapped=True)
-    print "Output in Hex and swapped:"
-    runTest(outInHex=True, outSwapped=True)
-    #print "Max Value:"
-    #globals.cardNumber = '255065535'
-    #runTest()
-    #print "Min Value:"
-    #globals.cardNumber = '0000000'
-    #runTest()
-
+    #print "Output swapped:"
+    #runTest(outSwapped=True)
+    #print "Output in Hex and swapped:"
+    #runTest(outInHex=True, outSwapped=True)
+    print "Max Value:"
+    globals.cardNumber = '255065535'
+    runTest()
+    print "Min Value:"
+    globals.cardNumber = '0000000'
+    runTest()
+    
     #H10302
+    print "H10302"
     globals.bitLength = 37
     globals.trailingZeros = 3
     globals.cardDataFormat = ['iClassFormat = 2', 'MifareFormat = 2', 'ProxFormat = 2', 'SeosFormat = 2']
@@ -233,18 +236,19 @@ def successCases():
     runTest()
     print "Output in Hex:"
     runTest(outInHex=True)
-    print "Output swapped:"
-    runTest(outSwapped=True)
-    print "Output in Hex and swapped:"
-    runTest(outInHex=True, outSwapped=True)
-    #print "Max Value:"
-    #globals.cardNumber = '34359738367'
-    #runTest()
-    #print "Min Value:"
-    #globals.cardNumber = '000000000000'
-    #runTest()
+    #print "Output swapped:"
+    #runTest(outSwapped=True)
+    #print "Output in Hex and swapped:"
+    #runTest(outInHex=True, outSwapped=True)
+    print "Max Value:"
+    globals.cardNumber = '34359738367'
+    runTest()
+    print "Min Value:"
+    globals.cardNumber = '0'
+    runTest()
 
     #H10304
+    print "H10304"
     globals.bitLength = 37
     globals.trailingZeros = 3
     globals.cardDataFormat = ['iClassFormat = 4', 'MifareFormat = 4', 'ProxFormat = 4', 'SeosFormat = 4']
@@ -253,20 +257,21 @@ def successCases():
     runTest()
     print "Output in Hex:"
     runTest(outInHex=True)
-    print "Output swapped:"
-    runTest(outSwapped=True)
-    print "Output in Hex and swapped:"
-    runTest(outInHex=True, outSwapped=True)
-    #print "Max Value:"
-    #globals.cardNumber = '65535524287' 
-    #runTest()
-    #print "Min Value:"
-    #globals.cardNumber = '0000000'
-    #runTest()
-    '''
+    #print "Output swapped:"
+    #runTest(outSwapped=True)
+    #print "Output in Hex and swapped:"
+    #runTest(outInHex=True, outSwapped=True)
+    print "Max Value:"
+    globals.cardNumber = '65535524287' 
+    runTest()
+    print "Min Value:"
+    globals.cardNumber = '0000000'
+    runTest()
+
    
-    
-    #H10320 - Currently causes crash DE28368 
+
+    #H10320
+    print "H10320"
     globals.bitLength = 36
     globals.trailingZeros = 4
     globals.cardDataFormat = ['iClassFormat = 20', 'MifareFormat = 20', 'ProxFormat = 20', 'SeosFormat = 20']
@@ -275,19 +280,21 @@ def successCases():
     runTest()
     print "Output in Hex:"
     runTest(outInHex=True)
-    print "Output swapped:"
-    runTest(outSwapped=True)
-    print "Output in Hex and swapped:"
-    runTest(outInHex=True, outSwapped=True)
+    #print "Output swapped:"
+    #runTest(outSwapped=True)
+    #print "Output in Hex and swapped:"
+    #runTest(outInHex=True, outSwapped=True)
     print "Max Value:"
     globals.cardNumber = '99999999'
     runTest()
-    #print "Min Value:"
-    #globals.cardNumber = 0
-    #runTest()
-    
+    print "Min Value:"
+    globals.cardNumber = '0'
+    runTest()
+
+    '''
     '''
     #Corp 1000
+    print "Corp 1000"
     globals.bitLength = 35
     globals.trailingZeros = 5
     globals.cardDataFormat = ['iClassFormat = 100', 'MifareFormat = 100', 'ProxFormat = 100', 'SeosFormat = 100']
@@ -296,20 +303,32 @@ def successCases():
     runTest()
     print "Output in Hex:"
     runTest(outInHex=True)
-    print "Output swapped:"
-    runTest(outSwapped=True)
-    print "Output in Hex and swapped:"
-    runTest(outInHex=True, outSwapped=True)
-    #print "Max Value:"
-    #globals.cardNumber = '409501048575'
-    #runTest()
-    #print "Min Value:"
-    #globals.cardNumber = '000000000'
-    #runTest()
-    '''
-
+    #print "Output swapped:"
+    #runTest(outSwapped=True)
+    #print "Output in Hex and swapped:"
+    #runTest(outInHex=True, outSwapped=True)
+    print "Max Value:"
+    globals.cardNumber = '409501048575'
+    runTest()
+    print "Min Value:"
+    globals.cardNumber = '000000000'
+    runTest()
+    
+    #CSN
+    print "CSN"
+    globals.cardDataFormat = ['iClassFormat = 253 ', 'MifareFormat = 253', 'ProxFormat = 253', 'SeosFormat = 253']
+    print "Normal Case:"
+    globals.cardNumber = '1012345'
+    runTest()
+    globals.cardNumber = str((2**63)-1)
+    print "Max Value:"
+    runTest()
+    print "Min Value:"
+    globals.cardNumber = '0'
+    runTest()
     '''
     #Auto
+    #print "Auto Mode"
     #globals.cardDataFormat = ['iClassFormat = 254', 'MifareFormat = 254', 'ProxFormat = 254', 'SeosFormat = 254']
     #globals.cardNumber = '1012345'
     #print "Normal Case:"
@@ -320,10 +339,11 @@ def successCases():
     #runTest(outSwapped=True)
     #print "Output in Hex and swapped:"
     #runTest (outInHex=True, outSwapped=True)
-    '''
-    '''
+
+    
     #Currently causes crash - DE28378
     #Customer Defined
+    print "Customer Defined Mode"
     globals.cardDataFormat = ['iClassFormat = 255', 'MifareFormat = 255', 'ProxFormat = 255', 'SeosFormat = 255']
     globals.cardNumber = '1012345'
     globals.customFields = [(0,20),(0,0),(0,0),(0,0)]
@@ -343,10 +363,10 @@ def successCases():
     runTest()
     print "Output in Hex:"
     runTest(outInHex=True)
-    print "Output swapped:"
-    runTest(outSwapped=True)
-    print "Output in Hex and swapped:"
-    runTest (outInHex=True, outSwapped=True)
+    #print "Output swapped:"
+    #runTest(outSwapped=True)
+    #print "Output in Hex and swapped:"
+    #runTest (outInHex=True, outSwapped=True)
 
     globals.customFields = [(16,8),(0,16),(0,0),(0,0)]
     globals.trailingZeros = 0
@@ -355,10 +375,10 @@ def successCases():
     runTest()
     print "Output in Hex:"
     runTest(outInHex=True)
-    print "Output swapped:"
-    runTest(outSwapped=True)
-    print "Output in Hex and swapped:"
-    runTest (outInHex=True, outSwapped=True)
+    #print "Output swapped:"
+    #runTest(outSwapped=True)
+    #print "Output in Hex and swapped:"
+    #runTest (outInHex=True, outSwapped=True)
 
     globals.customFields = [(12,7),(6,6),(0,6),(0,0)]
     globals.trailingZeros = 5
@@ -367,10 +387,10 @@ def successCases():
     runTest()
     print "Output in Hex:"
     runTest(outInHex=True)
-    print "Output swapped:"
-    runTest(outSwapped=True)
-    print "Output in Hex and swapped:"
-    runTest (outInHex=True, outSwapped=True)
+    #print "Output swapped:"
+    #runTest(outSwapped=True)
+    #print "Output in Hex and swapped:"
+    #runTest (outInHex=True, outSwapped=True)
 
     globals.customFields = [(18,6),(12,6),(6,6),(0,6)]
     globals.trailingZeros = 0
@@ -379,11 +399,11 @@ def successCases():
     runTest()
     print "Output in Hex:"
     runTest(outInHex=True)
-    print "Output swapped:"
-    runTest(outSwapped=True)
-    print "Output in Hex and swapped:"
-    runTest (outInHex=True, outSwapped=True)
-    '''
+    #print "Output swapped:"
+    #runTest(outSwapped=True)
+    #print "Output in Hex and swapped:"
+    #runTest (outInHex=True, outSwapped=True)
+    
 
 
     
