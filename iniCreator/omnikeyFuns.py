@@ -55,7 +55,9 @@ def runTest(outSwapped=False, outInHex=False):
         compare = str(hex(int(compare)).lstrip("0x") or '0').upper()
         inHexidecimal = 'true'
     if outSwapped:
-        compare = 'stub'
+        if len(compare) %2 != 0:
+            compare = '0'+compare
+        compare = "".join(reversed([compare[i:i+2] for i in range(0, len(compare), 2)]))
         outputSwap = 'true'
 
     loadIni()
@@ -328,19 +330,23 @@ def successCases():
     runTest()
     '''
     #Auto
-    #print "Auto Mode"
-    #globals.cardDataFormat = ['iClassFormat = 254', 'MifareFormat = 254', 'ProxFormat = 254', 'SeosFormat = 254']
-    #globals.cardNumber = '1012345'
-    #print "Normal Case:"
-    #runTest()
-    #print "Output in Hex:"
-    #runTest(outInHex=True)
-    #print "Output swapped:"
-    #runTest(outSwapped=True)
-    #print "Output in Hex and swapped:"
-    #runTest (outInHex=True, outSwapped=True)
+    print "Auto Mode"
+    globals.bitLength = 26
+    globals.trailingZeros = 6
+    globals.customFields = [(19,8),(3,16),(0,0),(0,0)]
+    globals.cardDataFormat = ['iClassFormat = 254', 'MifareFormat = 254', 'ProxFormat = 254', 'SeosFormat = 254']
+    globals.cardNumber = '1012345'
+    print "H10301 Case:"
+    runTest()
+    sys.exit(0)
+    print "Output in Hex:"
+    runTest(outInHex=True)
+    print "Output swapped:"
+    runTest(outSwapped=True)
+    print "Output in Hex and swapped:"
+    runTest (outInHex=True, outSwapped=True)
 
-    
+    '''
     #Currently causes crash - DE28378
     #Customer Defined
     print "Customer Defined Mode"
@@ -403,7 +409,7 @@ def successCases():
     #runTest(outSwapped=True)
     #print "Output in Hex and swapped:"
     #runTest (outInHex=True, outSwapped=True)
-    
+    '''
 
 
     
