@@ -139,20 +139,21 @@ def createPACS(args):
 
     #if set to Auto, grab one of the other formats to create PACS bits.
     if formatValue[0]==254:
-	    if bitLength < 27:
-		    keys = [1]
-	    elif bitLength < 26 and bitLength <33:
-		    keys = [1,20]
-	    elif bitLength < 32 and bitLength < 35:
-		    keys = [1,20,100]
-	    else:
-		    keys = [1,20,100,2]
-	    formatValue[0]=choice(keys)
+	    formatValue[0]=255 #use costomer defined settings to write PACS.  Auto can only decipher h01, h02, corp 1000, and h20
+	    #if bitLength < 27:
+	#	    keys = [1]
+	 #   elif bitLength < 26 and bitLength <33:
+	#	    keys = [1,20]
+	 #   elif bitLength < 32 and bitLength < 35:
+	#	    keys = [1,20,100]
+	 #   else:
+	#	    keys = [1,20,100,2]
+	 #   formatValue[0]=choice(keys)
     
-	    if formatValue[0] != 0:
-		    if (bitLength+trailingZeros)%8 != 0:
-			    trailingZeros = 8-(bitLength%8)
-			    print "trailing zeros automatically corrected for random format used" 
+	  #  if formatValue[0] != 0:
+	#	    if (bitLength+trailingZeros)%8 != 0:
+	#		    trailingZeros = 8-(bitLength%8)
+	#		    print "trailing zeros automatically corrected for random format used" 
 
     if formatValue[0] == 253:
 	    PACS = '0000'
@@ -208,7 +209,7 @@ def h01(args):
     tzField = calculateTZField(PACS_bin,trailingZeros)
 
 #def leadingZeros(PACS_bin, noLeadingZeros, precedingZeros):
-    PACS = leadingZeros(PACS_bin, noLeadingZeros, precedingZeros)
+    PACS = leadingZeros(PACS_bin)
    
     return tzField+PACS
 
@@ -232,7 +233,7 @@ def h02(args):
     tzField = calculateTZField(PACS_bin,trailingZeros)
 
 #def leadingZeros(PACS_bin, noLeadingZeros, precedingZeros):
-    PACS = leadingZeros(PACS_bin, noLeadingZeros, precedingZeros)
+    PACS = leadingZeros(PACS_bin)
    
     return tzField+PACS
 
@@ -252,7 +253,7 @@ def h04(args):
     tzField = calculateTZField(PACS_bin,trailingZeros)
 
 #def leadingZeros(PACS_bin, noLeadingZeros, precedingZeros):
-    PACS = leadingZeros(PACS_bin, noLeadingZeros, precedingZeros)
+    PACS = leadingZeros(PACS_bin)
    
     return tzField+PACS
 
@@ -300,7 +301,7 @@ def h20(args):
     tzField = calculateTZField(PACS_bin, trailingZeros)
 
 #def leadingZeros(PACS_bin, noLeadingZeros, precedingZeros):
-    PACS = leadingZeros(PACS_bin, noLeadingZeros, precedingZeros)
+    PACS = leadingZeros(PACS_bin)
     
     return tzField+PACS
 
@@ -332,7 +333,7 @@ def corp(args):
 
 
 #def leadingZeros(PACS_bin, noLeadingZeros, precedingZeros):
-    PACS = leadingZeros(PACS_bin, noLeadingZeros, precedingZeros)
+    PACS = leadingZeros(PACS_bin)
     return tzField+PACS
 
 def customer(args):
@@ -399,7 +400,7 @@ def customer(args):
 			print "Inserted blank field starting at bit "+str(blankStartbit)+" of length "+str(blankLength)
 			indexAddition = indexAddition+1
     sortedFields = tempFields
-
+    
     maxDigits=0
     for x in sortedFields:
         maxDigits = maxDigits + x.digits
@@ -409,25 +410,28 @@ def customer(args):
     for x in range(0,maxDigits-len(cardNumber)):
         cardNumWithZeros = '0'+cardNumWithZeros
 
-
     nextField = 0
     if contains(bitFields, lambda x: x.name == 'A'):
-	    A.decValue = int(cardNumWithZeros[nextField:A.digits])
+	    A.decValue = cardNumWithZeros[nextField:A.digits]
 	    nextField = nextField + A.digits
     if contains(bitFields, lambda x: x.name == 'B'):
-	    B.decValue = int(cardNumWithZeros[nextField:nextField+B.digits])
+	    B.decValue = cardNumWithZeros[nextField:nextField+B.digits]
 	    nextField = nextField + B.digits
     if contains(bitFields, lambda x: x.name == 'C'):
-	    C.decValue = int(cardNumWithZeros[nextField:nextField+C.digits])
+	    C.decValue = cardNumWithZeros[nextField:nextField+C.digits]
 	    nextField = nextField + C.digits
     if contains(bitFields, lambda x: x.name == 'D'):
-	    D.decValue = int(cardNumWithZeros[nextField:nextField+D.digits])
+	    D.decValue = cardNumWithZeros[nextField:nextField+D.digits]
 	    nextField = nextField + D.digits
 
 
 
     for x in sortedFields:
-        x.binValue=bin(x.decValue)
+        for i in range(0,x.digits):
+            binDigit = bin(int(x.decValue[i]))
+	    for j in range(0,4-len(binDigit)):
+                binDigit = '0'+binDigit
+	    x.binValue=x.binValue+binDigit
         x.padZeros()
 
     noLeadingZeros = ''
@@ -449,22 +453,24 @@ def customer(args):
         noLeadingZeros = noLeadingZeros +'0'
 
     PACS_bin = binaryString
+    print PACS_bin
 
     #def calculateTZField(PACS_bin, trailingZeros):
     tzField = calculateTZField(PACS_bin,trailingZeros)
 
     #def leadingZeros(PACS_bin, noLeadingZeros, precedingZeros):
-    PACS = leadingZeros(PACS_bin, noLeadingZeros, precedingZeros)
+    PACS = leadingZeros(PACS_bin)
+    print PACS
    
     return tzField+PACS
 
 def bin(s):
     return str(s) if s<=1 else bin(s>>1) + str(s&1)
 
-def leadingZeros(PACS_bin, noLeadingZeros, precedingZeros):
-    numChars = (len(PACS_bin)+3)/4
-    insertZeros = "%%0%dx" %numChars
-    PACS = insertZeros % int(PACS_bin, 2)
+def leadingZeros(binaryNum):
+    numHexChars = (len(binaryNum)+3)/4
+    insertZeros = "%%0%dx" %numHexChars
+    paddedDecimal = insertZeros % int(binaryNum, 2)
     '''
     print PACS
     PACSbitPos = len(PACS_bin)%4
@@ -481,7 +487,7 @@ def leadingZeros(PACS_bin, noLeadingZeros, precedingZeros):
             PACS = '0'+PACS
     print PACS
     '''
-    return PACS
+    return paddedDecimal
     
     
 def calculateTZField(PACS_bin, trailingZeros):
