@@ -331,7 +331,47 @@ def successCases():
     #print "Auto Mode"
     #globals.cardDataFormat = ['iClassFormat = 254', 'MifareFormat = 254', 'ProxFormat = 254', 'SeosFormat = 254']
     #globals.cardNumber = '1012345'
-    #print "Normal Case:"
+    #globals.bitLength=26
+    #globals.trailingZeros = 4
+    #globals.customFields = [(17,8),(1,16),(0,0),(0,0)]
+    #print "H10301 Format:"
+    #runTest()
+    #print "Output in Hex:"
+    #runTest(outInHex=True)
+    #print "Output swapped:"
+    #runTest(outSwapped=True)
+    #print "Output in Hex and swapped:"
+    #runTest (outInHex=True, outSwapped=True)
+    
+    #globals.bitLength=37
+    #globals.trailingZeros = 3
+    #globals.customFields = [(1,35),(0,0),(0,0),(0,0)]
+    #print "H10302 Format:"
+    #runTest()
+    #print "Output in Hex:"
+    #runTest(outInHex=True)
+    #print "Output swapped:"
+    #runTest(outSwapped=True)
+    #print "Output in Hex and swapped:"
+    #runTest (outInHex=True, outSwapped=True)
+    
+    #globals.cardNumber = '100012345'    
+    #globals.bitLength=35
+    #globals.trailingZeros = 5
+    #globals.customFields = [(21,12),(1,20),(0,0),(0,0)]
+    #print "Corp 1000 Format:"
+    #runTest()
+    #print "Output in Hex:"
+    #runTest(outInHex=True)
+    #print "Output swapped:"
+    #runTest(outSwapped=True)
+    #print "Output in Hex and swapped:"
+    #runTest (outInHex=True, outSwapped=True)
+    
+    #globals.cardNumber = '1012345'    
+    #globals.bitLength=36
+    #globals.trailingZeros = 4
+    #print "H10320 Format:"
     #runTest()
     #print "Output in Hex:"
     #runTest(outInHex=True)
