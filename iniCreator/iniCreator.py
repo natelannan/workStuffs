@@ -137,22 +137,26 @@ def createPACS(args):
         print "active card value not found."
         sys.exit(1)
 
-    #if set to Auto, grab one of the other formats to create PACS bits.
+    #if set to Auto, grab one of the other formats to create PACS bits.  if 36 bits use H10320 since it codes PACS in BCD
     if formatValue[0]==254:
-	    if bitLength < 27:
-		    keys = [1]
-	    elif bitLength < 26 and bitLength <33:
-		    keys = [1,20]
-	    elif bitLength < 32 and bitLength < 35:
-		    keys = [1,20,100]
-	    else:
-		    keys = [1,20,100,2]
-	    formatValue[0]=choice(keys)
+	if bitLength == 36:
+	    formatValue[0] = 20
+	else:
+	    formatValue[0] = 255
+	    #if bitLength < 27:
+		#    keys = [1]
+	    #elif bitLength < 26 and bitLength <33:
+		#    keys = [1,20]
+	    #elif bitLength < 32 and bitLength < 35:
+		#    keys = [1,20,100]
+	    #else:
+		#    keys = [1,20,100,2]
+	    #formatValue[0]=choice(keys)
     
-	    if formatValue[0] != 0:
-		    if (bitLength+trailingZeros)%8 != 0:
-			    trailingZeros = 8-(bitLength%8)
-			    print "trailing zeros automatically corrected for random format used" 
+	    #if formatValue[0] != 0:
+		#    if (bitLength+trailingZeros)%8 != 0:
+		#	    trailingZeros = 8-(bitLength%8)
+		#	    print "trailing zeros automatically corrected for random format used" 
 
     if formatValue[0] == 253:
 	    PACS = '0000'
@@ -433,7 +437,8 @@ def customer(args):
     noLeadingZeros = ''
     for x in reversed(sortedFields):
 	noLeadingZeros = noLeadingZeros + x.binValue
-
+    for x in range(0, sortedFields[0].startbit):
+        noLeadingZeros = noLeadingZeros+'0'
     binaryString = noLeadingZeros
     flag = False
     for x in range(0, bitLength-len(binaryString)):
