@@ -23,6 +23,7 @@ def testMatrix(args):
        usage() 
 
     globals.init(args)
+    outFile = open('TestResults.txt', 'w')
 
     print "Checking for required apps.  If not installed, program will attempt to " \
           "install."
@@ -42,10 +43,8 @@ def testMatrix(args):
     
     #Prox
     globals.activeCard = 'Prox'
-    successCases()
-    failCases()
-    proxSpecificCases()
-    sys.exit(0)
+    successCases(outFile)
+    failCases(outFile)
 
     os.system('read -s -n 1 -p "Place a Mifare card on top of the reader.  ' \
               'Press any key to continue..."')
@@ -53,9 +52,8 @@ def testMatrix(args):
 
     #Mifare
     globals.activeCard = 'Mifare'
-    successCases()
-    failCases()
-    proxSpecificCases()
+    successCases(outFile)
+    failCases(outFile)
 
     os.system('read -s -n 1 -p "Place a iClass card on top of the reader.  ' \
               'Press any key to continue..."')
@@ -63,9 +61,8 @@ def testMatrix(args):
 
     #iClass
     globals.activeCard = 'iClass'
-    successCases()
-    failCases()
-    proxSpecificCases()
+    successCases(outFile)
+    failCases(outFile)
 
     os.system('read -s -n 1 -p "Place a Seos card on top of the reader.  ' \
               'Press any key to continue..."')
@@ -73,10 +70,10 @@ def testMatrix(args):
 
     #Seos
     globals.activeCard = 'Seos'
-    successCases()
-    failCases()
-    proxSpecificCases()
+    successCases(outFile)
+    failCases(outFile)
 
+    outFile.close()
     cleanUp()
 
 
