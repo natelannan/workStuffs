@@ -45,6 +45,7 @@ def testMatrix(args):
     globals.activeCard = 'Prox'
     successCases(outFile)
     failCases(outFile)
+    '''
 
     os.system('read -s -n 1 -p "Place a Mifare card on top of the reader.  ' \
               'Press any key to continue..."')
@@ -72,7 +73,7 @@ def testMatrix(args):
     globals.activeCard = 'Seos'
     successCases(outFile)
     failCases(outFile)
-
+    '''
     outFile.close()
     cleanUp()
 

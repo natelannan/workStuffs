@@ -13,7 +13,7 @@ import globals
 
 def getApps():
     subprocess.call("smbclient -U autouser " + globals.WINSHARE + " -c \"get nlannan\\5427ckApps.zip\" Fn4WNus2T", shell=True)
-    subprocess.call("unzip -d 5427ckApps nlannan\\\\5427ckApps.zip", shell=True)
+    subprocess.call("unzip nlannan\\\\5427ckApps.zip", shell=True)
     subprocess.call("rm nlannan\\\\5427ckApps.zip", shell=True)
 
 def installApps():
@@ -26,9 +26,15 @@ def checkApps():
     curlSessionCmd = "curl http://"+globals.ipAddress+"/cgi-bin/dynamic/printer/config/reports/MenusPage.html"
     curlSessionArgs= shlex.split(curlSessionCmd)
     curlSession, err  = subprocess.Popen(curlSessionArgs,stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
-    cardslotPattern = re.compile(r".*Card Slot Simulation.*")
-    omnikeyPattern = re.compile(r".*Omnikey 5427ck Reader Driver.*")
-    readerPattern = re.compile(r".*Reader Test.*")
+    if globals.printerFamily == 'HS':
+        cardslotPattern = re.compile(r".*Card Slot Simulation.*")
+        omnikeyPattern = re.compile(r".*Omnikey 5427ck Reader Driver.*")
+        readerPattern = re.compile(r".*Reader Test.*")
+    else:
+        cardslotPattern = re.compile(r".*Card&nbsp;Slot&nbsp;Simulation.*")
+        omnikeyPattern = re.compile(r".*Omnikey&nbsp;5427ck&nbsp;Reader&nbsp;Driver.*")
+        readerPattern = re.compile(r".*Reader&nbsp;Test.*")
+        
     cardslotLine = cardslotPattern.search(curlSession)
     if cardslotLine:
         omnikeyLine = omnikeyPattern.search(curlSession)
@@ -54,6 +60,11 @@ def runTest(outFileStream, outSwapped=False, outInHex=False, noIni=False, failCa
     if outInHex:
         compare = str(hex(int(compare)).lstrip("0x") or '0').upper()
         inHexidecimal = 'true'
+        isRaw = globals.activeCard + 'Format = 0'
+        if isRaw in globals.cardDataFormat:
+                numChars = (globals.bitLength+7)/4 #ceiling to nearest byte and multiply by 2 to get # of nibbles needed
+                for x in range (len(compare), numChars):
+                    compare = '0'+compare                    
     if outSwapped:
         if outInHex == False:
             compare = str(hex(int(compare)).lstrip("0x") or '0').upper()
@@ -69,6 +80,7 @@ def runTest(outFileStream, outSwapped=False, outInHex=False, noIni=False, failCa
         setSettings(swap=outputSwap, inHex=inHexidecimal)
     deleteEsfLog()
     swipeCard()
+    
     userID = parseEsfLog()
 
     if failCase == False:
@@ -146,7 +158,10 @@ def setSettings(swap='false', inHex='false', beep='false', iClass='254', mifare=
     curlSessionCmd = "curl http://"+globals.ipAddress+"/cgi-bin/dynamic/printer/config/reports/MenusPage.html"
     curlSessionArgs= shlex.split(curlSessionCmd)
     curlSession, err  = subprocess.Popen(curlSessionArgs,stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
-    omnikeyPattern = re.compile(r".*Omnikey 5427ck Reader Driver.*=  (.*) <.*")
+    if globals.printerFamily == 'HS':
+        omnikeyPattern = re.compile(r".*Omnikey 5427ck Reader Driver.*=  (.*) <.*")
+    else:
+        omnikeyPattern = re.compile(r".*Omnikey&nbsp;5427ck&nbsp;Reader&nbsp;Driver.*=  (.*) <.*")
     omnikeyLine = omnikeyPattern.search(curlSession)
     omnikeyVersion = omnikeyLine.group(1)
 
@@ -207,7 +222,7 @@ def parser (searchFile):
     return userID
 
 def successCases(outFileStream):
-    
+    ''' 
     #RAW
     print "Raw Format"
     outFileStream.write("Raw Format\n")
@@ -465,7 +480,6 @@ def successCases(outFileStream):
     runTest (outFileStream, outInHex=True, outSwapped=True)
 
     '''
-    #Currently causes crash - DE28378
     #Customer Defined
     print "Customer Defined Mode"
     outFileStream.write("Customer Defined Mode\n")
@@ -474,6 +488,7 @@ def successCases(outFileStream):
     globals.customFields = [(0,20),(0,0),(0,0),(0,0)]
     globals.trailingZeros = 4
     globals.bitLength = 20
+    '''
     print "Normal Case, 1 field:"
     print "A field"
     outFileStream.write("Normal Case, 1 field\nA field\n")
@@ -499,7 +514,7 @@ def successCases(outFileStream):
     print "Output in Hex and swapped:"
     outFileStream.write("Output in Hex and swapped:\n")
     runTest (outFileStream, outInHex=True, outSwapped=True)
-
+    
     globals.customFields = [(16,8),(0,16),(0,0),(0,0)]
     globals.trailingZeros = 0
     globals.bitLength = 24
@@ -547,13 +562,13 @@ def successCases(outFileStream):
     print "Output in Hex and swapped:"
     outFileStream.write("Output in Hex and swapped:\n")
     runTest (outFileStream, outInHex=True, outSwapped=True)
-
+    '''
     print "Maximum Allowable bit length:"
     print "One Field:"
     outFileStream.write("Maximum Allowable bit length\nOne Field:\n")
     globals.cardNumber = '1012345'
     globals.customFields = [(0,255),(0,0),(0,0),(0,0)]
-    globals.trailingZeros = 5
+    globals.trailingZeros = 1
     globals.bitLength = 255
     runTest(outFileStream)
 
@@ -561,18 +576,20 @@ def successCases(outFileStream):
     outFileStream.write("Four Fields:\n")
     globals.cardNumber = '1234567890123456789123456789012345678912345678901234567891234567890123456789'
     globals.customFields = [(189,66),(126,63),(63,63),(0,63)]
+    print globals.bitLength
+    print globals.trailingZeros
     runTest(outFileStream)
 
     print "One Field of 1 bit filled with 255 bits that are ignored:"
     outFileStream.write("One Field of 1 bit filled with 255 bits that are ignored:\n")
-    globals.cardNumber = '1'
+    globals.cardNumber = '01'
     globals.customFields = [(0,0),(0,0),(0,0),(91,1)]
     runTest(outFileStream)
 
     print "Minimum Allowable Bit Length:"
     print "One Field Of One Bit:"
     outFileStream.write("Minimum Allowable Bit Length:\nOne Field Of One Bit:\n")
-    globals.cardNumber = '1'
+    globals.cardNumber = '01'
     globals.customFields =  [(0,0),(0,0),(0,0),(0,1)]
     globals.trailingZeros = 7
     globals.bitLeangth = 1
@@ -580,7 +597,7 @@ def successCases(outFileStream):
 
     print "Four Fields Of One Bit:"
     outFileStream.write("Four Fields Of One Bit:\n")
-    globals.cardNumber = '1111'
+    globals.cardNumber = '1010101'
     globals.customFields =  [(3,1),(2,1),(1,1),(0,1)]
     globals.trailingZeros = 4
     globals.bitLeangth = 4
@@ -606,7 +623,7 @@ def successCases(outFileStream):
     globals.trailingZeros = 1
     globals.bitLeangth = 39
     runTest(outFileStream)   
-    '''
+    
 
     
     
@@ -763,7 +780,7 @@ def failCases(outFileStream):
     globals.trailingZeros = 6
     runTest(outFileStream, failCase=True)
     
-    '''
+    
     print "Custom Setup:"
     print "Overlapping Fields:"
     outFileStream.write("Custom Setup:\nOverlapping Fields:\n")
@@ -774,7 +791,7 @@ def failCases(outFileStream):
     outFileStream.write("Wrong Boundaries:\n")
     loadPreExistIni("wrongBoundaries.ini")
     runTest(outFileStream, noIni=True, failCase=True)
-    '''
+    
     print "Bad PACS File:"
     outFileStream.write("Bad PACS File:\n")
     loadPreExistIni("badPACS.ini")

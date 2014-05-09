@@ -6,12 +6,12 @@ import sys, re
 
 
 cardNumber = '1012345'
-bitLength = 36
-cardDataFormat = ['iClassFormat = 42', 'MifareFormat = 0', 'ProxFormat = 254', 'SeosFormat = 100']
+bitLength = 26
+cardDataFormat = ['iClassFormat = 0', 'MifareFormat = 0', 'ProxFormat = 0', 'SeosFormat = 0']
 activeCard = 'Prox'
-trailingZeros = 4
+trailingZeros = 6
 outFileName = 'foo.ini'
-customFields = [(21,12),(1,20),(0,0),(0,0)]
+customFields = [(3,1),(2,1),(1,1),(0,1)]
 
 args = [cardNumber, bitLength, cardDataFormat, activeCard, trailingZeros, outFileName, customFields]
 #args = []

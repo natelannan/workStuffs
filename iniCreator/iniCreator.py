@@ -201,7 +201,7 @@ def h01(args):
     trailingZeros = args[4]
     minDigits = 7
     if len(cardNumber) < minDigits:
-        print "cardNumber is to short for H10301 Format.  No ini created"
+        print "cardNumber is too short for H10301 Format.  No ini created"
         sys.exit (1) 
 
 #def fac_cn_formats(CNdigits, CNlength, FAClength, cardNumber, trailingZeros, parityChange = False):
@@ -245,7 +245,7 @@ def h04(args):
     trailingZeros = args[4]
     minDigits = 7
     if len(cardNumber) < minDigits:
-        print "cardNumber is to short for H10304 Format.  No ini created"
+        print "cardNumber is too short for H10304 Format.  No ini created"
         sys.exit (1) 
 
 #def fac_cn_formats(CNdigits, CNlength, FAClength, cardNumber, trailingZeros, parityChange = False):
@@ -319,7 +319,7 @@ def corp(args):
     trailingZeros = args[4]
     minDigits = 9
     if len(cardNumber) < minDigits:
-        print "cardNumber is to short for Corp1000 Format. No ini File Created."
+        print "cardNumber is too short for Corp1000 Format. No ini File Created."
 	sys.exit(1)
 #	for x in range(0,(9-len(str(cardNumber)))):
 #		cardNumber = int('1'+str(cardNumber))
@@ -454,7 +454,7 @@ def customer(args):
         noLeadingZeros = noLeadingZeros +'0'
 
     PACS_bin = binaryString
-
+    print len(PACS_bin)
     #def calculateTZField(PACS_bin, trailingZeros):
     tzField = calculateTZField(PACS_bin,trailingZeros)
 
