@@ -183,7 +183,8 @@ def createCSN(args):
 def raw(args):
     cardNumber = args[0]
     trailingZeros = args[4]
-    addedZeros = str(hex(int(cardNumber) << trailingZeros).lstrip("0x") or '0')
+    #addedZeros = str(hex(int(cardNumber) << trailingZeros).lstrip("0x") or '0')
+    addedZeros = "%x" % (int(cardNumber) << trailingZeros) 
     if (len(addedZeros) % 2) != 0:
         addedZeros = '0'+addedZeros
     if trailingZeros <16:
@@ -406,12 +407,13 @@ def customer(args):
 
     maxDigits=0
     for x in sortedFields:
-        maxDigits = maxDigits + x.digits
-
+	    if x.name != 'blank':
+		    maxDigits = maxDigits + x.digits
 
     cardNumWithZeros = cardNumber
     for x in range(0,maxDigits-len(cardNumber)):
         cardNumWithZeros = '0'+cardNumWithZeros
+
 
 
     nextField = 0
@@ -427,7 +429,6 @@ def customer(args):
     if contains(bitFields, lambda x: x.name == 'D'):
 	    D.decValue = int(cardNumWithZeros[nextField:nextField+D.digits])
 	    nextField = nextField + D.digits
-
 
 
     for x in sortedFields:
@@ -454,7 +455,6 @@ def customer(args):
         noLeadingZeros = noLeadingZeros +'0'
 
     PACS_bin = binaryString
-    print len(PACS_bin)
     #def calculateTZField(PACS_bin, trailingZeros):
     tzField = calculateTZField(PACS_bin,trailingZeros)
 
