@@ -56,6 +56,7 @@ def testMatrix(args):
     successCases(outFile)
     failCases(outFile)
 
+
     os.system('read -s -n 1 -p "Place a iClass card on top of the reader.  ' \
               'Press any key to continue..."')
     print

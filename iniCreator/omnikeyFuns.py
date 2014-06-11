@@ -11,6 +11,8 @@ import globals
 
 
 
+
+
 def getApps():
     subprocess.call("smbclient -U autouser " + globals.WINSHARE + " -c \"get nlannan\\5427ckApps.zip\" Fn4WNus2T", shell=True)
     subprocess.call("unzip nlannan\\\\5427ckApps.zip", shell=True)
@@ -53,7 +55,21 @@ def checkApps():
         print "cardslotsim.fls failed to install on device."
         return False
 
-def runTest(outFileStream, outSwapped=False, outInHex=False, noIni=False, failCase=False):
+def runTest(outFileStream, outSwapped=False, outInHex=False, noIni=False, failCase=False,
+            minID = 0, customSettings = []):
+#customSettings is a list of dictionaries containing: 
+#'label': label for custom setup 
+#'type': card format type - prox = 64, iclass = 10, mifare = 3, seos = 80
+#'bitLength': bit length of card
+#'fields: list of pairs for bit fields
+#'adjust': set adjustment settings on or off 
+#'belowThresh': set lower than threshold on or off
+#'thresh': threshold value 
+#'startBit': start bit value 
+#'value': decimal adjustment value 
+#'mask': bit mask value
+#all values are strings 
+
     compare = globals.cardNumber
     inHexidecimal = 'false'
     outputSwap = 'false'
@@ -61,7 +77,7 @@ def runTest(outFileStream, outSwapped=False, outInHex=False, noIni=False, failCa
     
     if (globals.activeCard + 'Format = 0') in globals.cardDataFormat:
         isRaw = True
-
+        
 
     rawHex = str(hex(int(compare)).lstrip("0x") or '0').upper()
     firstNibble = int(rawHex[0],16) # decimal value of first nibble
@@ -76,7 +92,11 @@ def runTest(outFileStream, outSwapped=False, outInHex=False, noIni=False, failCa
     else:
         print "Problem calculating Hex value for Card Number"
         sys.exit(1)
-    numBits = (len(rawHex)-1)*4 + bitsInNibble
+    if isRaw:
+        numBits = (len(rawHex)-1)*4 + bitsInNibble
+    else:
+        numBits = globals.bitLength
+
     paddedBytes = (numBits+globals.trailingZeros+7)/8 #number of bytes with trailing zeros
     dataBits = 8*paddedBytes - globals.trailingZeros #number of bits for PACS data
     PACSBytes = (dataBits+7)/8
@@ -89,6 +109,8 @@ def runTest(outFileStream, outSwapped=False, outInHex=False, noIni=False, failCa
         inHexidecimal = 'true'
         if isRaw:
             compare = rawHex
+        else:
+            compare = str(hex(int(compare)).lstrip("0x") or '0').upper()
                     
     if outSwapped:
         compare = rawHex
@@ -99,8 +121,16 @@ def runTest(outFileStream, outSwapped=False, outInHex=False, noIni=False, failCa
 
     if noIni == False:
         loadIni()
+
     if outInHex or outSwapped:
-        setSettings(swap=outputSwap, inHex=inHexidecimal)
+        setSettings(swap=outputSwap, inHex=inHexidecimal, minCardID = minID)
+        #no need for custom settings only valid in CSN
+    elif len(customSettings) != 0:
+        setSettings(custom = customSettings, minCardID = minID)
+        # no need for swap or hex, only valid for CSN mode
+    elif minID > 0:
+        setSettings(minCardID = minID)
+
     deleteEsfLog()
     swipeCard()
     
@@ -173,7 +203,8 @@ def startCurlSession(sessionValue):
     curlStart, err = subprocess.Popen(curlStartArgs, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
     
 
-def setSettings(swap='false', inHex='false', beep='false', iClass='254', mifare='254', prox='254', seos='254'):
+def setSettings(swap='false', inHex='false', beep='false', iClass='254', mifare='254', prox='254', seos='254', minCardID = '0', 
+                custom = []):
     sessionValue = getCurlSession()
     startCurlSession(sessionValue)
     
@@ -187,21 +218,53 @@ def setSettings(swap='false', inHex='false', beep='false', iClass='254', mifare=
     omnikeyLine = omnikeyPattern.search(curlSession)
     omnikeyVersion = omnikeyLine.group(1)
 
-    writeUCF(omnikeyVersion, swap, inHex, beep, iClass, mifare, prox, seos)
+    writeUCF(omnikeyVersion, swap, inHex, beep, iClass, mifare, prox, seos, minCardID, custom)
     sendUCF()
 
     
 
-def writeUCF(version, dataswap, datahex, beep, iClass, mifare, prox, seos):
+def writeUCF(version, dataswap, datahex, beep, iClass, mifare, prox, seos, minCardID, custom):
     file = open("omnikey5427.ucf", "w+")
     file.write("esf.version.omnikey5427ckdriver "+version+"\n")
     file.write("esf.omnikey5427ckdriver.settings.dataswap \""+dataswap+"\"\n")
     file.write("esf.omnikey5427ckdriver.settings.datahex \""+datahex+"\"\n")
     file.write("esf.omnikey5427ckdriver.settings.beep \""+beep+"\"\n")
+    file.write("esf.omnikey5427ckdriver.settings.minCardIdResponseLength \""+minCardID+"\"\n")
     file.write("esf.omnikey5427ckdriver.settings.iClassformat \""+iClass+"\"\n")
+    file.write("esf.omnikey5427ckdriver.settings.iClassMode \"1\"\n")
     file.write("esf.omnikey5427ckdriver.settings.miFareformat \""+mifare+"\"\n")
+    file.write("esf.omnikey5427ckdriver.settings.miFareMode \"1\"\n")
     file.write("esf.omnikey5427ckdriver.settings.proxformat \""+prox+"\"\n")
     file.write("esf.omnikey5427ckdriver.settings.seosformat \""+seos+"\"\n")
+    file.write("esf.omnikey5427ckdriver.settings.seosMode \"1\"\n")
+    file.write("esf.omnikey5427ckdriver.settings.iso14443A.enable \"true\"\n")
+    file.write("esf.omnikey5427ckdriver.settings.iso14443B.enable \"true\"\n")
+    file.write("esf.omnikey5427ckdriver.settings.iso15693.enable \"true\"\n")
+    file.write("esf.omnikey5427ckdriver.settings.felica.enable \"true\"\n")
+    file.write("esf.omnikey5427ckdriver.settings.iClass14443.enable \"false\"\n")
+    file.write("esf.omnikey5427ckdriver.settings.iClass15693.enable \"true\"\n")
+    file.write("esf.omnikey5427ckdriver.settings.hidprox.enable \"true\"\n")
+    i=1
+    while custom:
+        temp = custom.pop()
+        file.write("esf.omnikey5427ckdriver.inst."+str(i)+".settings.customproxformat.label \""+temp['label']+"\"\n")
+        file.write("esf.omnikey5427ckdriver.inst."+str(i)+".settings.customproxformat.type \""+temp['type']+"\"\n")
+        file.write("esf.omnikey5427ckdriver.inst."+str(i)+".settings.customproxformat.bitlength \""+temp['bitLength']+"\"\n")
+        file.write("esf.omnikey5427ckdriver.inst."+str(i)+".settings.customproxformat.startbitA \""+temp['fields'][0][0]+"\"\n")
+        file.write("esf.omnikey5427ckdriver.inst."+str(i)+".settings.customproxformat.idbitlengthA \""+temp['fields'][0][1]+"\"\n")
+        file.write("esf.omnikey5427ckdriver.inst."+str(i)+".settings.customproxformat.startbitB \""+temp['fields'][1][0]+"\"\n")
+        file.write("esf.omnikey5427ckdriver.inst."+str(i)+".settings.customproxformat.idbitlengthB \""+temp['fields'][1][1]+"\"\n")
+        file.write("esf.omnikey5427ckdriver.inst."+str(i)+".settings.customproxformat.startbitC \""+temp['fields'][2][0]+"\"\n")
+        file.write("esf.omnikey5427ckdriver.inst."+str(i)+".settings.customproxformat.idbitlengthC \""+temp['fields'][2][1]+"\"\n")
+        file.write("esf.omnikey5427ckdriver.inst."+str(i)+".settings.customproxformat.startbitD \""+temp['fields'][3][0]+"\"\n")
+        file.write("esf.omnikey5427ckdriver.inst."+str(i)+".settings.customproxformat.idbitlengthD \""+temp['fields'][3][1]+"\"\n")
+        file.write("esf.omnikey5427ckdriver.inst."+str(i)+".settings.customproxformat.adjust.enable \""+temp['adjust']+"\"\n")
+        file.write("esf.omnikey5427ckdriver.inst."+str(i)+".settings.customproxformat.adjust.lower \""+temp['belowThresh']+"\"\n")
+        file.write("esf.omnikey5427ckdriver.inst."+str(i)+".settings.customproxformat.adjust.threshold \""+temp['thresh']+"\"\n")
+        file.write("esf.omnikey5427ckdriver.inst."+str(i)+".settings.customproxformat.adjust.startBit \""+temp['startBit']+"\"\n")
+        file.write("esf.omnikey5427ckdriver.inst."+str(i)+".settings.customproxformat.adjust.value \""+temp['value']+"\"\n")
+        file.write("esf.omnikey5427ckdriver.inst."+str(i)+".settings.customproxformat.adjust.mask \""+temp['mask']+"\"\n")
+        i=i+1
     file.close()
 
 def sendUCF():
@@ -823,7 +886,34 @@ def failCases(outFileStream):
     loadPreExistIni("badFields.ini")
     runTest(outFileStream, noIni=True, failCase=True)  
     
-
+def disabledCardTests(outFileStream):
+    print "\n\nDisabled Card Tests:"
+    outFileStream.write("\n\nDisabled Card Tests:\n")
+    globals.cardDataFormat = ['iClassFormat = 254', 'MifareFormat = 254', 'ProxFormat = 254', 'SeosFormat = 254']
+    globals.cardNumber = '1012345'
+    globals.bitLength=26
+    globals.trailingZeros = 6
+    globals.customFields = [(17,8),(1,16),(0,0),(0,0)]
+    print "\n\nProx Disabled:"
+    outFileStream.write("\n\nProx Disabled:\n")
+    globals.cardNumber = '1012345'
+    runTest(outFileStream, disabledCard = 'Prox')
+    print "\n\nMifare Disabled:"
+    outFileStream.write("\n\nMifare Disabled:\n")
+    globals.cardNumber = '1012345'
+    runTest(outFileStream, disabledCard = 'Mifare')
+    print "\n\niClass Disabled:"
+    outFileStream.write("\n\niClass Disabled:\n")
+    globals.cardNumber = '1012345'
+    runTest(outFileStream, disabledCard = 'iClass')
+    print "\n\nFelicia Disabled:"
+    outFileStream.write("\n\nFelicia Disabled:\n")
+    globals.cardNumber = '1012345'
+    runTest(outFileStream, disabledCard = 'Felicia')
+    print "\n\nAll Disabled:"
+    outFileStream.write("\n\nAll Disabled:\n")
+    globals.cardNumber = '1012345'
+    runTest(outFileStream, disabledCard = 'All')
 
 def cleanUp():
     subprocess.call("rm -rf 5427ckApps", shell=True)
