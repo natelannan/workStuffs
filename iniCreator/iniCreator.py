@@ -34,7 +34,7 @@ class bitField:
 			self.binValue = '0'+self.binValue
 
 def iniCreator(argv):
-    if ((len(argv)< 6)or (len(argv)>7)):
+    if ((len(argv)< 6)or (len(argv)>8)):
         usage()
 
     writeFile(argv)
@@ -44,10 +44,13 @@ def iniCreator(argv):
 def writeFile(args):
     outFileName = args[5]
     cardDataFormat = args[2]
-    if (len(args) == 7):
+    if (len(args) > 7):
         customFields = args[6]
     else:
         customFields = [(0,0),(0,0),(0,0),(0,0)]
+    suppress = False
+    if (len(args) == 8):
+        suppress = True
         
     file = open(outFileName, "w+")
     
@@ -82,24 +85,24 @@ def writeFile(args):
         file.write("[SeosOptions]\n")
         file.write(filteredList[0]+'\n\n')
 
-
-    #write custom fields
-    #A
-    file.write("[CustomProxFormat-A]\n")
-    file.write("StartBit = "+str(hex(customFields[0][0]).lstrip("0x") or '0')+"\n")
-    file.write("BitLength = "+str(hex(customFields[0][1]).lstrip("0x") or '0')+"\n")
-    #B
-    file.write("[CustomProxFormat-B]\n")
-    file.write("StartBit = "+str(hex(customFields[1][0]).lstrip("0x") or '0')+"\n")
-    file.write("BitLength = "+str(hex(customFields[1][1]).lstrip("0x") or '0')+"\n")
-    #C
-    file.write("[CustomProxFormat-C]\n")
-    file.write("StartBit = "+str(hex(customFields[2][0]).lstrip("0x") or '0')+"\n")
-    file.write("BitLength = "+str(hex(customFields[2][1]).lstrip("0x") or '0')+"\n")
-    #D
-    file.write("[CustomProxFormat-D]\n")
-    file.write("StartBit = "+str(hex(customFields[3][0]).lstrip("0x") or '0')+"\n")
-    file.write("BitLength = "+str(hex(customFields[3][1]).lstrip("0x") or '0')+"\n\n")
+    if not suppress:
+        #write custom fields
+        #A
+        file.write("[CustomProxFormat-A]\n")
+        file.write("StartBit = "+str(hex(customFields[0][0]).lstrip("0x") or '0')+"\n")
+        file.write("BitLength = "+str(hex(customFields[0][1]).lstrip("0x") or '0')+"\n")
+        #B
+        file.write("[CustomProxFormat-B]\n")
+        file.write("StartBit = "+str(hex(customFields[1][0]).lstrip("0x") or '0')+"\n")
+	file.write("BitLength = "+str(hex(customFields[1][1]).lstrip("0x") or '0')+"\n")
+        #C
+        file.write("[CustomProxFormat-C]\n")
+        file.write("StartBit = "+str(hex(customFields[2][0]).lstrip("0x") or '0')+"\n")
+        file.write("BitLength = "+str(hex(customFields[2][1]).lstrip("0x") or '0')+"\n")
+        #D
+        file.write("[CustomProxFormat-D]\n")
+        file.write("StartBit = "+str(hex(customFields[3][0]).lstrip("0x") or '0')+"\n")
+        file.write("BitLength = "+str(hex(customFields[3][1]).lstrip("0x") or '0')+"\n\n")
     
     
     #create raw pacs bits
@@ -220,7 +223,7 @@ def h01(args):
 def h02(args):
     cardNumber = args[0]
     trailingZeros = args[4]
-    CN_bin = bin(int(cardNumber))
+    CN_bin = bins(int(cardNumber))
     parity = CN_bin + '0'
     for x in range (0, trailingZeros):
         parity = parity+'0'
@@ -271,7 +274,7 @@ def h20(args):
     ones = [0]*4
     parity = ''
     for char in cardNumber:
-        binDec = bin(int(char))
+        binDec = bins(int(char))
 	for x in range(0,4-len(binDec)):
 		binDec = '0'+binDec
 	ones[0] = ones[0] + binDec[1:4].count('1')
@@ -432,7 +435,7 @@ def customer(args):
 
 
     for x in sortedFields:
-        x.binValue=bin(x.decValue)
+        x.binValue=bins(x.decValue)
         x.padZeros()
 
     noLeadingZeros = ''
@@ -463,8 +466,8 @@ def customer(args):
    
     return tzField+PACS
 
-def bin(s):
-    return str(s) if s<=1 else bin(s>>1) + str(s&1)
+def bins(s):
+    return str(s) if s<=1 else bins(s>>1) + str(s&1)
 
 def leadingZeros(PACS_bin, noLeadingZeros, precedingZeros):
     numChars = (len(PACS_bin)+3)/4
@@ -506,11 +509,11 @@ def calculateTZField(PACS_bin, trailingZeros):
 def fac_cn_formats(CNdigits, CNlength, FAClength, cardNumber, trailingZeros, parityChange = False):
     CN = int(cardNumber[len(cardNumber)-CNdigits:])
     FAC = int(cardNumber[:len(cardNumber)-CNdigits])
-    CN_bin = bin(CN)
+    CN_bin = bins(CN)
     for x in range(0, CNlength-len(CN_bin)):
         CN_bin = '0'+CN_bin
     parity = CN_bin + '0'
-    FAC_bin = bin(FAC)
+    FAC_bin = bins(FAC)
     noLeadingZeros = FAC_bin
     flag = False
     for x in range(0, FAClength-len(FAC_bin)):
@@ -540,7 +543,7 @@ def contains (list, filter):
 	return False
 
 def usage():
-	print "usage:  iniCreator.py <cardNumber> <bitLength> <cardDataFormat> <activeCard> <trailingZeros> <outFileName> [customFields]\n"
+	print "usage:  iniCreator.py <cardNumber> <bitLength> <cardDataFormat> <activeCard> <trailingZeros> <outFileName> [customFields] [suppress]\n"
         print "CARD NUMBER:"
         print ("\tA string of the card ID number that will be translated to PACS bits based on bit length and card data format.\n"
 	       "\tThis is the ID you expect to see when the card is scanned.  For formats that include FAC and CN\n"
@@ -585,7 +588,12 @@ def usage():
                "\tThe bit fields are little Endian (start with right most bit).\n"
                "\tIf a field's length value is set to 0 this field will be ignored.\n"
                "\tDecimal values will be converted to hex to send to 5427ck driver."
-               "\n\tExample array:  [(0,8), (8,8), (16,8), (24, 8)]")
+               "\n\tExample array:  [(0,8), (8,8), (16,8), (24, 8)]\n")
+	print "SUPPRESS:"
+	print ("\tOptional arguement to suppress writing the custom fields to the ini\n"
+	       "file.  The value of this arguement can be anything.  If it exists, the\n"
+	       "custom fields will not be written.  PACS will still be calculated using\n"
+	       "the specified custom fields.")
 	sys.exit(0)
      
 if __name__ == '__main__':

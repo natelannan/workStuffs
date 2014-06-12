@@ -56,7 +56,7 @@ def checkApps():
         return False
 
 def runTest(outFileStream, outSwapped=False, outInHex=False, noIni=False, failCase=False,
-            minID = 0, customSettings = []):
+            minID = '0', customSettings = []):
 #customSettings is a list of dictionaries containing: 
 #'label': label for custom setup 
 #'type': card format type - prox = 64, iclass = 10, mifare = 3, seos = 80
@@ -74,12 +74,15 @@ def runTest(outFileStream, outSwapped=False, outInHex=False, noIni=False, failCa
     inHexidecimal = 'false'
     outputSwap = 'false'
     isRaw = False
+    isCSN = False
     
     if (globals.activeCard + 'Format = 0') in globals.cardDataFormat:
         isRaw = True
+    if (globals.activeCard + 'Format = 253') in globals.cardDataFormat:
+        isCSN = True
         
-
-    rawHex = str(hex(int(compare)).lstrip("0x") or '0').upper()
+    rawHex = str("%x" % int(compare)).upper()
+#    rawHex = str(hex(int(compare)).lstrip("0x") or '0').upper()
     firstNibble = int(rawHex[0],16) # decimal value of first nibble
     if firstNibble > 7:
         bitsInNibble = 4
@@ -94,6 +97,8 @@ def runTest(outFileStream, outSwapped=False, outInHex=False, noIni=False, failCa
         sys.exit(1)
     if isRaw:
         numBits = (len(rawHex)-1)*4 + bitsInNibble
+        if numBits == 0:
+            numBits = 1
     else:
         numBits = globals.bitLength
 
@@ -105,19 +110,20 @@ def runTest(outFileStream, outSwapped=False, outInHex=False, noIni=False, failCa
     for x in range (0, numChars):
         rawHex = '0'+rawHex
         
+    if isRaw:
+        compare = rawHex
     if outInHex:
         inHexidecimal = 'true'
-        if isRaw:
+        if isCSN:
             compare = rawHex
-        else:
-            compare = str(hex(int(compare)).lstrip("0x") or '0').upper()
                     
     if outSwapped:
-        compare = rawHex
-        compare = "".join(reversed([compare[i:i+2] for i in range(0, len(compare), 2)]))
-        if outInHex == False:
-            compare = str(int(compare, 16))
-        outputSwap = 'true'
+        if isCSN:
+            compare = rawHex
+            compare = "".join(reversed([compare[i:i+2] for i in range(0, len(compare), 2)]))
+            if outInHex == False:
+                compare = str(int(compare, 16))
+                outputSwap = 'true'
 
     if noIni == False:
         loadIni()
@@ -128,13 +134,22 @@ def runTest(outFileStream, outSwapped=False, outInHex=False, noIni=False, failCa
     elif len(customSettings) != 0:
         setSettings(custom = customSettings, minCardID = minID)
         # no need for swap or hex, only valid for CSN mode
-    elif minID > 0:
+    elif int(minID) > 0:
         setSettings(minCardID = minID)
+
+    if len(customSettings) != 0:
+        adjustResult = adjustValue(compare, customSettings)
+        if adjustResult != 'no adjustment':
+            compare = adjustResult
+            
+    while len(compare) < int(minID):
+        compare = '0'+compare
 
     deleteEsfLog()
     swipeCard()
     
     userID = parseEsfLog()
+
 
     if failCase == False:
         if userID == compare:
@@ -307,8 +322,54 @@ def parser (searchFile):
         userID = '0'
     return userID
 
-def successCases(outFileStream):
+def adjustValue(compare, customSettings):
+    #customSettings is a list of dictionaries containing: 
+    #'label': label for custom setup 
+    #'type': card format type - prox = 64, iclass = 10, mifare = 3, seos = 80
+    #'bitLength': bit length of card
+    #'fields: list of pairs for bit fields
+    #'adjust': set adjustment settings on or off 
+    #'belowThresh': set lower than threshold on or off
+    #'thresh': threshold value 
+    #'startBit': start bit value 
+    #'value': decimal adjustment value 
+    #'mask': bit mask value
+    #all values are strings
+    if globals.activeCard == 'Prox':
+        activeNum = '64'
+    elif globals.activeCard =='iClass':
+        activeNum = '10'
+    elif globals.activeCard =='Mifare':
+        activeNum = '3'
+    elif globals.activeCard == 'Seos':
+        activeNum = '80'
     
+    while customSettings:
+        temp = customSettings.pop()
+        if temp['type'] == activeNum:
+            if int(temp['bitLength']) == globals.bitLength:
+                print "Custom setup matched."
+                break
+    else:
+        print "No matching custom setup found.  Device will revert to raw mode."
+        return 'no adjustment'
+
+    if temp['adjust'] == 'false':
+        print "Adjustment not enabled."
+    else:
+        if (temp['belowThresh'] == 'true') and (int(compare) > int(temp['thresh'])):
+            print "Card value is above threshold.  No additional processing."
+        else:
+            intCompare = int(compare) >> int(temp['startBit']) #make new start bit for card number
+            intCompare = intCompare + int(temp['value']) #add adjustment value to card number
+            intCompare = intCompare & int(temp['mask'], 16) #bit mask card number
+            compare = str(intCompare)
+            return compare
+            
+
+
+def successCases(outFileStream):
+    '''
     #RAW
     print "\n\nRaw Format"
     outFileStream.write("\n\nRaw Format\n")
@@ -335,6 +396,10 @@ def successCases(outFileStream):
     outFileStream.write("\n\nMin Value:\n")
     globals.cardNumber = '0'
     runTest(outFileStream)
+    print "\n\nLess than minimum ID length:"
+    outFileStream.write("\n\nLess than minimum ID length:")
+    globals.cardNumber = '1012345'
+    runTest(outFileStream, minID = '9')
                       
     
     #H10301
@@ -364,6 +429,10 @@ def successCases(outFileStream):
     outFileStream.write("\n\nMin Value:\n")
     globals.cardNumber = '0000000'
     runTest(outFileStream)
+    print "\n\nLess than minimum ID length:"
+    outFileStream.write("\n\nLess than minimum ID length:")
+    globals.cardNumber = '1012345'
+    runTest(outFileStream, minID = '9')
     
     #H10302
     print "\n\nH10302"
@@ -392,6 +461,10 @@ def successCases(outFileStream):
     outFileStream.write("\n\nMin Value:\n")
     globals.cardNumber = '0'
     runTest(outFileStream)
+    print "\n\nLess than minimum ID length:"
+    outFileStream.write("\n\nLess than minimum ID length:")
+    globals.cardNumber = '1012345'
+    runTest(outFileStream, minID = '9')
 
     #H10304
     print "\n\nH10304"
@@ -420,6 +493,10 @@ def successCases(outFileStream):
     outFileStream.write("\n\nMin Value:\n")
     globals.cardNumber = '0000000'
     runTest(outFileStream)
+    print "\n\nLess than minimum ID length:"
+    outFileStream.write("\n\nLess than minimum ID length:")
+    globals.cardNumber = '1012345'
+    runTest(outFileStream, minID = '9')
 
    
     
@@ -451,6 +528,10 @@ def successCases(outFileStream):
     outFileStream.write("\n\nMin Value:\n")
     globals.cardNumber = '0'
     runTest(outFileStream)
+    print "\n\nLess than minimum ID length:"
+    outFileStream.write("\n\nLess than minimum ID length:")
+    globals.cardNumber = '1012345'
+    runTest(outFileStream, minID = '9')
 
     #Corp 1000
     print "\n\nCorp 1000"
@@ -479,15 +560,29 @@ def successCases(outFileStream):
     outFileStream.write("\n\nMin Value:\n")
     globals.cardNumber = '000000000'
     runTest(outFileStream)
-    
-    #CSN
+    print "\n\nLess than minimum ID length:"
+    outFileStream.write("\n\nLess than minimum ID length:")
+    globals.cardNumber = '100012345'
+    runTest(outFileStream, minID = '11')
+    '''
+    #CSN 
     print "\n\nCSN"
     outFileStream.write("\n\nCSN\n")
+    globals.trailingZeros = 0   
     globals.cardDataFormat = ['iClassFormat = 253 ', 'MifareFormat = 253', 'ProxFormat = 253', 'SeosFormat = 253']
     print "Normal Case:"
     outFileStream.write("Normal Case:\n")
     globals.cardNumber = '1012345'
     runTest(outFileStream)
+    print "\n\nOutput in Hex:"
+    outFileStream.write("\n\nOutput in Hex:\n")
+    runTest(outFileStream, outInHex=True)
+    print "\n\nOutput swapped:"
+    outFileStream.write("\n\nOutput swapped:\n")
+    runTest(outFileStream, outSwapped=True)
+    print "\n\nOutput in Hex and swapped:"
+    outFileStream.write("\n\nOutput in Hex and swapped:\n")
+    runTest(outFileStream, outInHex=True, outSwapped=True)
     globals.cardNumber = str((2**63)-1)
     print "\n\nMax Value:"
     outFileStream.write("\n\nMax Value:\n")
@@ -496,6 +591,15 @@ def successCases(outFileStream):
     outFileStream.write("\n\nMin Value:\n")
     globals.cardNumber = '0'
     runTest(outFileStream)
+    print "\n\nLess than minimum ID length:"
+    outFileStream.write("\n\nLess than minimum ID length:\n")
+    globals.cardNumber = '1012345'
+    runTest(outFileStream, minID = '9')
+    print "\n\nLess than minimum ID length (hex and swapped):"
+    outFileStream.write("\n\nLess than minimum ID length (hex and swapped):\n")
+    globals.cardNumber = '1012345'
+    runTest(outFileStream, outInHex=True, outSwapped=True, minID = '9')
+    
     
     #Auto
     print "\n\nAuto Mode"
@@ -517,6 +621,9 @@ def successCases(outFileStream):
     print "\n\nOutput in Hex and swapped:"
     outFileStream.write("\n\nOutput in Hex and swapped:\n")
     runTest (outFileStream, outInHex=True, outSwapped=True)
+    print "\n\nLess than minimum ID length:"
+    outFileStream.write("\n\nLess than minimum ID length:")
+    runTest(outFileStream, minID = '9')
     
     globals.bitLength=37
     globals.trailingZeros = 3
@@ -533,6 +640,9 @@ def successCases(outFileStream):
     print "\n\nOutput in Hex and swapped:"
     outFileStream.write("\n\nOutput in Hex and swapped:\n")
     runTest (outFileStream, outInHex=True, outSwapped=True)
+    print "\n\nLess than minimum ID length:"
+    outFileStream.write("\n\nLess than minimum ID length:")
+    runTest(outFileStream, minID = '9')
     
     globals.cardNumber = '100012345'    
     globals.bitLength=35
@@ -550,6 +660,9 @@ def successCases(outFileStream):
     print "\n\nOutput in Hex and swapped:"
     outFileStream.write("\n\nOutput in Hex and swapped:\n")
     runTest (outFileStream, outInHex=True, outSwapped=True)
+    print "\n\nLess than minimum ID length:"
+    outFileStream.write("\n\nLess than minimum ID length:")
+    runTest(outFileStream, minID = '11')
     
     globals.cardNumber = '1012345'    
     globals.bitLength=36
@@ -566,6 +679,9 @@ def successCases(outFileStream):
     print "\n\nOutput in Hex and swapped:"
     outFileStream.write("\n\nOutput in Hex and swapped:\n")
     runTest (outFileStream, outInHex=True, outSwapped=True)
+    print "\n\nLess than minimum ID length:"
+    outFileStream.write("\n\nLess than minimum ID length:")
+    runTest(outFileStream, minID = '9')
 
     
     #Customer Defined
@@ -602,6 +718,9 @@ def successCases(outFileStream):
     print "\n\nOutput in Hex and swapped:"
     outFileStream.write("\n\nOutput in Hex and swapped:\n")
     runTest (outFileStream, outInHex=True, outSwapped=True)
+    print "\n\nLess than minimum ID length:"
+    outFileStream.write("\n\nLess than minimum ID length:")
+    runTest(outFileStream, minID = '9')
     
     globals.customFields = [(16,8),(0,16),(0,0),(0,0)]
     globals.trailingZeros = 0
@@ -618,6 +737,9 @@ def successCases(outFileStream):
     print "\n\nOutput in Hex and swapped:"
     outFileStream.write("\n\nOutput in Hex and swapped:\n")
     runTest (outFileStream, outInHex=True, outSwapped=True)
+    print "\n\nLess than minimum ID length:"
+    outFileStream.write("\n\nLess than minimum ID length:")
+    runTest(outFileStream, minID = '9')
 
     globals.customFields = [(12,7),(6,6),(0,6),(0,0)]
     globals.trailingZeros = 5
@@ -634,6 +756,9 @@ def successCases(outFileStream):
     print "\n\nOutput in Hex and swapped:"
     outFileStream.write("\n\nOutput in Hex and swapped:\n")
     runTest (outFileStream, outInHex=True, outSwapped=True)
+    print "\n\nLess than minimum ID length:"
+    outFileStream.write("\n\nLess than minimum ID length:")
+    runTest(outFileStream, minID = '9')
 
     globals.customFields = [(18,6),(12,6),(6,6),(0,6)]
     globals.trailingZeros = 0
@@ -650,6 +775,9 @@ def successCases(outFileStream):
     print "\n\nOutput in Hex and swapped:"
     outFileStream.write("\n\nOutput in Hex and swapped:\n")
     runTest (outFileStream, outInHex=True, outSwapped=True)
+    print "\n\nLess than minimum ID length:"
+    outFileStream.write("\n\nLess than minimum ID length:")
+    runTest(outFileStream, minID = '9')
     
     print "\n\nMaximum allowable bit length:"
     print "One Field:"
@@ -884,9 +1012,15 @@ def failCases(outFileStream):
     print "\n\nBad Field File:"
     outFileStream.write("\n\nBad Field File:\n")
     loadPreExistIni("badFields.ini")
-    runTest(outFileStream, noIni=True, failCase=True)  
+    runTest(outFileStream, noIni=True, failCase=True) 
+
+def multipleCustomTests(outFileStream):
+    print "Stub"
     
-def disabledCardTests(outFileStream):
+    
+def disabledCardTests(outFileStream): 
+    #not currently possible to automate.  Disabled card types suppress card events, cardslotsim generates a card event 
+    #regardless of disabled card type settings
     print "\n\nDisabled Card Tests:"
     outFileStream.write("\n\nDisabled Card Tests:\n")
     globals.cardDataFormat = ['iClassFormat = 254', 'MifareFormat = 254', 'ProxFormat = 254', 'SeosFormat = 254']
