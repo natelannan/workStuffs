@@ -44,13 +44,14 @@ def iniCreator(argv):
 def writeFile(args):
     outFileName = args[5]
     cardDataFormat = args[2]
-    if (len(args) > 7):
+    if (len(args) >= 7):
         customFields = args[6]
     else:
         customFields = [(0,0),(0,0),(0,0),(0,0)]
+
     suppress = False
     if (len(args) == 8):
-        suppress = True
+        suppress = args[7]
         
     file = open(outFileName, "w+")
     
@@ -314,7 +315,7 @@ def h20(args):
 
 def csn(args):
     cardNumber = args[0]
-    addedZeros = str(hex(int(cardNumber)).lstrip("0x") or '0')
+    addedZeros = str("%x" % int(cardNumber))
     CSNbits = addedZeros
     return CSNbits
 
@@ -347,7 +348,7 @@ def customer(args):
     cardNumber = args[0]
     bitLength = args[1]
     trailingZeros = args[4]
-    if (len(args) == 7):
+    if (len(args) >= 7):
         customFields = args[6]
     else:
         customFields = [(0,0),(0,0),(0,0),(0,0)]
@@ -407,6 +408,7 @@ def customer(args):
 			print "Inserted blank field starting at bit "+str(blankStartbit)+" of length "+str(blankLength)
 			indexAddition = indexAddition+1
     sortedFields = tempFields
+
 
     maxDigits=0
     for x in sortedFields:
@@ -591,7 +593,7 @@ def usage():
                "\n\tExample array:  [(0,8), (8,8), (16,8), (24, 8)]\n")
 	print "SUPPRESS:"
 	print ("\tOptional arguement to suppress writing the custom fields to the ini\n"
-	       "file.  The value of this arguement can be anything.  If it exists, the\n"
+	       "file.  The value of this arguement should be a boolean True or False.  If it True, the\n"
 	       "custom fields will not be written.  PACS will still be calculated using\n"
 	       "the specified custom fields.")
 	sys.exit(0)

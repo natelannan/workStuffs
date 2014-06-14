@@ -45,6 +45,7 @@ def testMatrix(args):
     globals.activeCard = 'Prox'
     successCases(outFile)
     failCases(outFile)
+    multipleCustomTests(outFile)
     '''
 
     os.system('read -s -n 1 -p "Place a Mifare card on top of the reader.  ' \

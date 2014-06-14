@@ -3,7 +3,7 @@
 def init(args):
     global ipAddress, printerFamily, telnetPort
     global cardNumber, bitLength, cardDataFormat, activeCard, trailingZeros
-    global outFileName, customFields, WINSHARE, sendtcp
+    global outFileName, customFields, WINSHARE, sendtcp, suppress
     if (len(args)==1):
         ipAddress = args[0]
         printerFamily='HS'
@@ -30,3 +30,4 @@ def init(args):
     customFields = [(16,8),(0,16),(0,0),(0,0)]
     WINSHARE="\\\\\\\\germany.lxbp.ftlesx.rds.lexmark.com\\\\homefs"
     sendtcp="/users/nlannan/bin/sendtcp"
+    suppress = False

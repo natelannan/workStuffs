@@ -95,7 +95,7 @@ def runTest(outFileStream, outSwapped=False, outInHex=False, noIni=False, failCa
     else:
         print "Problem calculating Hex value for Card Number"
         sys.exit(1)
-    if isRaw:
+    if isRaw or isCSN:
         numBits = (len(rawHex)-1)*4 + bitsInNibble
         if numBits == 0:
             numBits = 1
@@ -118,6 +118,7 @@ def runTest(outFileStream, outSwapped=False, outInHex=False, noIni=False, failCa
             compare = rawHex
                     
     if outSwapped:
+        outputSwap = 'true'
         if isCSN:
             compare = rawHex
             compare = "".join(reversed([compare[i:i+2] for i in range(0, len(compare), 2)]))
@@ -128,6 +129,7 @@ def runTest(outFileStream, outSwapped=False, outInHex=False, noIni=False, failCa
     if noIni == False:
         loadIni()
 
+    
     if outInHex or outSwapped:
         setSettings(swap=outputSwap, inHex=inHexidecimal, minCardID = minID)
         #no need for custom settings only valid in CSN
@@ -137,8 +139,10 @@ def runTest(outFileStream, outSwapped=False, outInHex=False, noIni=False, failCa
     elif int(minID) > 0:
         setSettings(minCardID = minID)
 
+    
     if len(customSettings) != 0:
         adjustResult = adjustValue(compare, customSettings)
+        print adjustResult
         if adjustResult != 'no adjustment':
             compare = adjustResult
             
@@ -169,7 +173,7 @@ def runTest(outFileStream, outSwapped=False, outInHex=False, noIni=False, failCa
 
 
 def loadIni():
-    iniArgs = [globals.cardNumber, globals.bitLength, globals.cardDataFormat, globals.activeCard, globals.trailingZeros, globals.outFileName, globals.customFields]
+    iniArgs = [globals.cardNumber, globals.bitLength, globals.cardDataFormat, globals.activeCard, globals.trailingZeros, globals.outFileName, globals.customFields, globals.suppress]
     iniCreator(iniArgs)
 
     sessionValue = getCurlSession()
@@ -239,6 +243,7 @@ def setSettings(swap='false', inHex='false', beep='false', iClass='254', mifare=
     
 
 def writeUCF(version, dataswap, datahex, beep, iClass, mifare, prox, seos, minCardID, custom):
+    tempCustom = custom  #shallow copy for .pop()
     file = open("omnikey5427.ucf", "w+")
     file.write("esf.version.omnikey5427ckdriver "+version+"\n")
     file.write("esf.omnikey5427ckdriver.settings.dataswap \""+dataswap+"\"\n")
@@ -260,8 +265,8 @@ def writeUCF(version, dataswap, datahex, beep, iClass, mifare, prox, seos, minCa
     file.write("esf.omnikey5427ckdriver.settings.iClass15693.enable \"true\"\n")
     file.write("esf.omnikey5427ckdriver.settings.hidprox.enable \"true\"\n")
     i=1
-    while custom:
-        temp = custom.pop()
+    while tempCustom:
+        temp = tempCustom.pop()
         file.write("esf.omnikey5427ckdriver.inst."+str(i)+".settings.customproxformat.label \""+temp['label']+"\"\n")
         file.write("esf.omnikey5427ckdriver.inst."+str(i)+".settings.customproxformat.type \""+temp['type']+"\"\n")
         file.write("esf.omnikey5427ckdriver.inst."+str(i)+".settings.customproxformat.bitlength \""+temp['bitLength']+"\"\n")
@@ -344,21 +349,24 @@ def adjustValue(compare, customSettings):
     elif globals.activeCard == 'Seos':
         activeNum = '80'
     
-    while customSettings:
-        temp = customSettings.pop()
+    tempCustom = customSettings # shallow copy for .pop()
+    while tempCustom:
+        temp = tempCustom.pop()
         if temp['type'] == activeNum:
             if int(temp['bitLength']) == globals.bitLength:
                 print "Custom setup matched."
                 break
     else:
-        print "No matching custom setup found.  Device will revert to raw mode."
+        print "No matching custom setup found."
         return 'no adjustment'
 
     if temp['adjust'] == 'false':
         print "Adjustment not enabled."
     else:
-        if (temp['belowThresh'] == 'true') and (int(compare) > int(temp['thresh'])):
+        if (temp['belowThresh'] == 'true') and (int(compare) >= int(temp['thresh'])):
             print "Card value is above threshold.  No additional processing."
+        elif (temp['belowThresh'] == 'false') and (int(compare) < int(temp['thresh'])):
+             print "Card value below threshold and adjustment below threshold is turned off.  No additional processing."           
         else:
             intCompare = int(compare) >> int(temp['startBit']) #make new start bit for card number
             intCompare = intCompare + int(temp['value']) #add adjustment value to card number
@@ -369,7 +377,7 @@ def adjustValue(compare, customSettings):
 
 
 def successCases(outFileStream):
-    '''
+    
     #RAW
     print "\n\nRaw Format"
     outFileStream.write("\n\nRaw Format\n")
@@ -564,7 +572,7 @@ def successCases(outFileStream):
     outFileStream.write("\n\nLess than minimum ID length:")
     globals.cardNumber = '100012345'
     runTest(outFileStream, minID = '11')
-    '''
+    
     #CSN 
     print "\n\nCSN"
     outFileStream.write("\n\nCSN\n")
@@ -574,6 +582,7 @@ def successCases(outFileStream):
     outFileStream.write("Normal Case:\n")
     globals.cardNumber = '1012345'
     runTest(outFileStream)
+    
     print "\n\nOutput in Hex:"
     outFileStream.write("\n\nOutput in Hex:\n")
     runTest(outFileStream, outInHex=True)
@@ -682,7 +691,7 @@ def successCases(outFileStream):
     print "\n\nLess than minimum ID length:"
     outFileStream.write("\n\nLess than minimum ID length:")
     runTest(outFileStream, minID = '9')
-
+    
     
     #Customer Defined
     print "\n\nCustomer Defined Mode"
@@ -697,6 +706,7 @@ def successCases(outFileStream):
     print "A field"
     outFileStream.write("Normal Case, 1 field\nA field\n")
     runTest(outFileStream)
+    
     globals.customFields = [(0,0),(0,20),(0,0),(0,0)]
     print "\n\nB field"
     outFileStream.write("\n\nNormal Case, 1 field\nB field\n")
@@ -1015,8 +1025,157 @@ def failCases(outFileStream):
     runTest(outFileStream, noIni=True, failCase=True) 
 
 def multipleCustomTests(outFileStream):
-    print "Stub"
+    print "\n\nMultiple Custom and Adjustment tests:"
+    outFileStream.write("\n\nMultiple Custom and Adjustment tests:\n")
+    globals.cardDataFormat = ['iClassFormat = 255', 'MifareFormat = 255', 'ProxFormat = 255', 'SeosFormat = 255']
+    globals.cardNumber = '1012345'
+    globals.bitLength=26
+    globals.trailingZeros = 6
+    globals.customFields = [(17,8),(1,16),(0,0),(0,0)]
+    globals.suppress = True
+    if globals.activeCard == 'Prox':
+        cardType = '64'
+    elif globals.activeCard == 'iClass':
+        cardType = '10'
+    elif globals.activeCard == 'Mifare':
+        cardType = '3'
+    elif globals.activeCard == 'Seos':
+        cardType = '80'
+    else:
+        cardType = '64'
     
+    customSuccess = {'label': 'customSuccess', 'type': cardType, 'bitLength':'26','fields':[('11','08'),('01','10'),('00','00'),('00','00')],
+                     'adjust': 'false', 'belowThresh': 'true', 'thresh': '95', 'startBit': '19', 'value': '132', 'mask': 'fffffffffffffff0'}
+    customProx = {'label': 'customProx', 'type': '64', 'bitLength':'19','fields':[('08','0B'),('00','08'),('00','00'),('00','00')],
+                     'adjust': 'false', 'belowThresh': 'true', 'thresh': '95', 'startBit': '19', 'value': '132', 'mask': 'fffffffffffffff0'}
+    customIClass = {'label': 'customIClass', 'type': '10', 'bitLength':'19','fields':[('08','0B'),('00','08'),('00','00'),('00','00')],
+                     'adjust': 'false', 'belowThresh': 'true', 'thresh': '95', 'startBit': '19', 'value': '132', 'mask': 'fffffffffffffff0'}
+    customMifare = {'label': 'customMifare', 'type': '3', 'bitLength':'19','fields':[('08','0B'),('00','08'),('00','00'),('00','00')],
+                     'adjust': 'false', 'belowThresh': 'true', 'thresh': '95', 'startBit': '19', 'value': '132', 'mask': 'fffffffffffffff0'}
+    customSeos = {'label': 'customSeos', 'type': '80', 'bitLength':'19','fields':[('08','0B'),('00','08'),('00','00'),('00','00')],
+                     'adjust': 'false', 'belowThresh': 'true', 'thresh': '95', 'startBit': '19', 'value': '132', 'mask': 'fffffffffffffff0'}
+    customList = [customSeos, customMifare, customIClass, customProx, customSuccess]
+    print "\n5 custom setups, 1 with correct bit length:"
+    outFileStream.write("\5 custom setups, 1 with correct bit length\n")
+    runTest (outFileStream, customSettings = customList)
+
+    customSuccess = {'label': 'customSuccess', 'type': cardType, 'bitLength':'26','fields':[('11','08'),('01','10'),('00','00'),('00','00')],
+                     'adjust': 'false', 'belowThresh': 'true', 'thresh': '95', 'startBit': '19', 'value': '132', 'mask': 'fffffffffffffff0'}
+    customFail1 = {'label': 'customFail1', 'type': cardType, 'bitLength':'19','fields':[('08','0B'),('00','08'),('00','00'),('00','00')],
+                     'adjust': 'false', 'belowThresh': 'true', 'thresh': '95', 'startBit': '19', 'value': '132', 'mask': 'fffffffffffffff0'}
+    customFail2 = {'label': 'customFail2', 'type': cardType, 'bitLength':'32','fields':[('18','08'),('10','08'),('08','08'),('00','08')],
+                   'adjust': 'false', 'belowThresh': 'true', 'thresh': '95', 'startBit': '19', 'value': '132', 'mask': 'fffffffffffffff0'}
+    customList = [customSuccess, customFail2, customFail1]
+    print "\n3 custom setups, all same type with different bit lengths.  Correct bit length setup should be used:"
+    outFileStream.write("\n3 custom setups, all same type with different bit lengths.  Correct bit length setup should be used:\n")
+    runTest (outFileStream, customSettings = customList)
+
+    customSuccess = {'label': 'customSuccess', 'type': cardType, 'bitLength':'26','fields':[('11','08'),('01','10'),('00','00'),('00','00')],
+                     'adjust': 'false', 'belowThresh': 'true', 'thresh': '95', 'startBit': '19', 'value': '132', 'mask': 'fffffffffffffff0'}
+    customFail1 = {'label': 'customFail1', 'type': cardType, 'bitLength':'26','fields':[('10','08'),('00','10'),('00','00'),('00','00')],
+                     'adjust': 'false', 'belowThresh': 'true', 'thresh': '95', 'startBit': '19', 'value': '132', 'mask': 'fffffffffffffff0'}
+    customFail2 = {'label': 'customFail2', 'type': cardType, 'bitLength':'26','fields':[('12','08'),('10','02'),('00','00'),('00','00')],
+                   'adjust': 'false', 'belowThresh': 'true', 'thresh': '95', 'startBit': '19', 'value': '132', 'mask': 'fffffffffffffff0'}
+    customList = [customSuccess, customFail2, customFail1]
+    print "\n3 custom setups, all same type with same bit lengths.  Last correct bit length setup should be used:"
+    outFileStream.write("\n3 custom setups, all same type with same bit lengths.  Last correct bit length setup should be used:\n")
+    runTest (outFileStream, customSettings = customList)
+    
+    customSuccess = {'label': 'customSuccess', 'type': cardType, 'bitLength':'26','fields':[('11','08'),('01','10'),('00','00'),('00','00')],
+                     'adjust': 'true', 'belowThresh': 'true', 'thresh': '100', 'startBit': '2', 'value': '100', 'mask': 'ffffff0'}
+    customList = [customSuccess]
+    print "\nAdjustment and threshold set.  Card Number above threshold, no adjustments made:"
+    outFileStream.write("\nAdjustment set.  Threshold set.  Card Number above threshold, no adjustments made:\n")
+    runTest (outFileStream, customSettings = customList)
+    
+    customSuccess = {'label': 'customSuccess', 'type': cardType, 'bitLength':'26','fields':[('11','08'),('01','10'),('00','00'),('00','00')],
+                     'adjust': 'true', 'belowThresh': 'true', 'thresh': '5000000', 'startBit': '2', 'value': '100', 'mask': 'ffffff0'}
+    customList = [customSuccess]
+    print "\nAdjustment and threshold set.  Card Number below threshold, adjustments made:"
+    outFileStream.write("\nAdjustment and threshold set.  Card Number below threshold, adjustments made:\n")
+    runTest (outFileStream, customSettings = customList)
+
+    customSuccess = {'label': 'customSuccess', 'type': cardType, 'bitLength':'26','fields':[('11','08'),('01','10'),('00','00'),('00','00')],
+                     'adjust': 'true', 'belowThresh': 'false', 'thresh': '5000000', 'startBit': '2', 'value': '100', 'mask': 'ffffff0'}
+    customList = [customSuccess]
+    print "\nAdjustment set.  Below threshold not set, adjustments not made:"
+    outFileStream.write("\nAdjustment set.  Threshold not set, adjustments made:\n")
+    runTest (outFileStream, customSettings = customList)
+
+    customSuccess = {'label': 'customSuccess', 'type': cardType, 'bitLength':'26','fields':[('11','08'),('01','10'),('00','00'),('00','00')],
+                     'adjust': 'true', 'belowThresh': 'false', 'thresh': '0', 'startBit': '2', 'value': '100', 'mask': 'ffffff0'}
+    customList = [customSuccess]
+    print "\nAdjustment set.  Below threshold not set, adjustments made:"
+    outFileStream.write("\nAdjustment set.  Threshold not set, adjustments made:\n")
+    runTest (outFileStream, customSettings = customList)
+    
+    customSuccess = {'label': 'customSuccess', 'type': cardType, 'bitLength':'26','fields':[('11','08'),('01','10'),('00','00'),('00','00')],
+                     'adjust': 'true', 'belowThresh': 'false', 'thresh': '5000000', 'startBit': '1', 'value': '2147483647', 'mask': 'ffffffffffffffff'}
+    customList = [customSuccess]
+    print "\nMax Adjustment Value:"  #max value is 0x7fffffff 
+    outFileStream.write("\nMax Adjustment Value:\n")
+    runTest (outFileStream, customSettings = customList)
+
+    customSuccess = {'label': 'customSuccess', 'type': cardType, 'bitLength':'26','fields':[('11','08'),('01','10'),('00','00'),('00','00')],
+                     'adjust': 'true', 'belowThresh': 'false', 'thresh': '5000000', 'startBit': '2147483647', 'value': '0', 'mask': 'ffffffffffffffff'}
+    customList = [customSuccess]
+    print "\nMax Start Bit:"  #max value is 0x7fffffff 
+    outFileStream.write("\nMax Start Bit:\n")
+    runTest (outFileStream, customSettings = customList)
+
+    customSuccess = {'label': 'customSuccess', 'type': cardType, 'bitLength':'26','fields':[('11','08'),('01','10'),('00','00'),('00','00')],
+                     'adjust': 'true', 'belowThresh': 'true', 'thresh': '2147483647', 'startBit': '2', 'value': '0', 'mask': 'ffffffffffffffff'}
+    customList = [customSuccess]
+    print "\nMax threshold:"  #max value is 0x7fffffff 
+    outFileStream.write("\nMax threshold:\n")
+    runTest (outFileStream, customSettings = customList)
+
+    customFail = {'label': 'customFail', 'type': cardType, 'bitLength':'26','fields':[('11','08'),('01','10'),('00','00'),('00','00')],
+                     'adjust': 'true', 'belowThresh': 'true', 'thresh': '2147483648', 'startBit': '1', 'value': '0', 'mask': 'fffffffffffffff'}
+    customList = [customFail]
+    print "\nOver Max threshold:"
+    outFileStream.write("\nOver Max threshold:\n")
+    runTest (outFileStream, failCase = True, customSettings = customList)
+    
+
+    customFail1 = {'label': 'customSuccess', 'type': cardType, 'bitLength':'19','fields':[('00','13'),('00','00'),('00','00'),('00','00')],
+                     'adjust': 'false', 'belowThresh': 'true', 'thresh': '5000000', 'startBit': '2', 'value': '100', 'mask': 'ffffff0'}
+    customFail2 = {'label': 'customSuccess', 'type': cardType, 'bitLength':'24','fields':[('00','18'),('00','00'),('00','00'),('00','00')],
+                     'adjust': 'false', 'belowThresh': 'true', 'thresh': '5000000', 'startBit': '2', 'value': '100', 'mask': 'ffffff0'}
+    customFail3 = {'label': 'customSuccess', 'type': cardType, 'bitLength':'27','fields':[('00','1B'),('00','00'),('00','00'),('00','00')],
+                     'adjust': 'false', 'belowThresh': 'true', 'thresh': '5000000', 'startBit': '2', 'value': '100', 'mask': 'ffffff0'}
+    customList = [customFail3, customFail2, customFail1 ]
+    print "\nFail Case - 3 setups of wrong bit length:"
+    outFileStream.write("\nFail Case - 3 setups of wrong bit length:\n")
+    runTest (outFileStream, failCase = True, customSettings = customList)
+
+    customFail = {'label': 'customFail', 'type': cardType, 'bitLength':'26','fields':[('15','08'),('01','14'),('00','00'),('00','00')],
+                     'adjust': 'false', 'belowThresh': 'false', 'thresh': '5000000', 'startBit': '2', 'value': '100', 'mask': 'ffffff0'}
+    customList = [customFail]
+    print "\nFail Case - mismatched bit length and field boundaries:"
+    outFileStream.write("\nFail Case - mismatched bit length and field boundaries:\n")
+    runTest (outFileStream, failCase = True, customSettings = customList)
+    
+    customFail = {'label': 'customFail', 'type': cardType, 'bitLength':'26','fields':[('11','08'),('01','10'),('00','00'),('00','00')],
+                     'adjust': 'true', 'belowThresh': 'false', 'thresh': '5000000', 'startBit': '1', 'value': '2147483648', 'mask': 'fffffffffffffff'}
+    customList = [customFail]
+    print "\nOver Max adjustment value:"
+    outFileStream.write("\nOver Max adjustment Value:\n")
+    runTest (outFileStream, failCase = True, customSettings = customList)
+
+    customFail = {'label': 'customFail', 'type': cardType, 'bitLength':'26','fields':[('11','08'),('01','10'),('00','00'),('00','00')],
+                     'adjust': 'true', 'belowThresh': 'false', 'thresh': '5000000', 'startBit': '2147483648', 'value': '0', 'mask': 'fffffffffffffff'}
+    customList = [customFail]
+    print "\nOver Max start bit:"
+    outFileStream.write("\nOver Max start bit:\n")
+    runTest (outFileStream, failCase = True, customSettings = customList)
+    
+
+
+
+
+
+
     
 def disabledCardTests(outFileStream): 
     #not currently possible to automate.  Disabled card types suppress card events, cardslotsim generates a card event 
