@@ -43,8 +43,8 @@ def testMatrix(args):
     
     #Prox
     globals.activeCard = 'Prox'
-    successCases(outFile)
-    failCases(outFile)
+    #successCases(outFile)
+    #failCases(outFile)
     multipleCustomTests(outFile)
     '''
 

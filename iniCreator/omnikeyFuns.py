@@ -4,6 +4,7 @@ import subprocess
 import shlex
 import re
 import telnetlib
+import copy
 from time import sleep
 from iniCreator import *
 import globals
@@ -139,10 +140,10 @@ def runTest(outFileStream, outSwapped=False, outInHex=False, noIni=False, failCa
     elif int(minID) > 0:
         setSettings(minCardID = minID)
 
+    sleep(10) #wait for settings and inifile to settle
     
     if len(customSettings) != 0:
         adjustResult = adjustValue(compare, customSettings)
-        print adjustResult
         if adjustResult != 'no adjustment':
             compare = adjustResult
             
@@ -243,7 +244,7 @@ def setSettings(swap='false', inHex='false', beep='false', iClass='254', mifare=
     
 
 def writeUCF(version, dataswap, datahex, beep, iClass, mifare, prox, seos, minCardID, custom):
-    tempCustom = custom  #shallow copy for .pop()
+    tempCustom = copy.copy(custom)  #shallow copy for .pop()
     file = open("omnikey5427.ucf", "w+")
     file.write("esf.version.omnikey5427ckdriver "+version+"\n")
     file.write("esf.omnikey5427ckdriver.settings.dataswap \""+dataswap+"\"\n")
@@ -349,7 +350,7 @@ def adjustValue(compare, customSettings):
     elif globals.activeCard == 'Seos':
         activeNum = '80'
     
-    tempCustom = customSettings # shallow copy for .pop()
+    tempCustom = copy.copy(customSettings) # shallow copy for .pop()
     while tempCustom:
         temp = tempCustom.pop()
         if temp['type'] == activeNum:
@@ -362,13 +363,16 @@ def adjustValue(compare, customSettings):
 
     if temp['adjust'] == 'false':
         print "Adjustment not enabled."
+        return 'no adjustment'
     else:
         if (temp['belowThresh'] == 'true') and (int(compare) >= int(temp['thresh'])):
             print "Card value is above threshold.  No additional processing."
+            return 'no adjustment'
         elif (temp['belowThresh'] == 'false') and (int(compare) < int(temp['thresh'])):
-             print "Card value below threshold and adjustment below threshold is turned off.  No additional processing."           
+             print "Card value below threshold and adjustment below threshold is turned off.  No additional processing."
+             return 'no adjustment'
         else:
-            intCompare = int(compare) >> int(temp['startBit']) #make new start bit for card number
+            intCompare = int(compare) >> int(temp['startBit'])-1 #make new start bit for card number
             intCompare = intCompare + int(temp['value']) #add adjustment value to card number
             intCompare = intCompare & int(temp['mask'], 16) #bit mask card number
             compare = str(intCompare)
@@ -860,7 +864,7 @@ def successCases(outFileStream):
 def failCases(outFileStream):
     print "\n\nFailure cases:"
     outFileStream.write("\n\nFailure cases:\n")
-
+    
     #RAW
     print "Raw Format"
     outFileStream.write("Raw Format\n")
@@ -968,14 +972,14 @@ def failCases(outFileStream):
     globals.trailingZeros = 3
     globals.cardNumber = '100012345'
     runTest(outFileStream, failCase=True)
-   
+    
     #CSN
     print "\n\nCSN"
     outFileStream.write("\n\nCSN\n")
     globals.cardDataFormat = ['iClassFormat = 253 ', 'MifareFormat = 253', 'ProxFormat = 253', 'SeosFormat = 253']
     print "Out of Bounds (max):"
     outFileStream.write("Out of Bounds (max):\n")
-    globals.cardNumber = str(2**63)
+    globals.cardNumber = str(2**2008)
     runTest(outFileStream, failCase=True)
     
     #Auto
@@ -1058,7 +1062,7 @@ def multipleCustomTests(outFileStream):
     print "\n5 custom setups, 1 with correct bit length:"
     outFileStream.write("\5 custom setups, 1 with correct bit length\n")
     runTest (outFileStream, customSettings = customList)
-
+    
     customSuccess = {'label': 'customSuccess', 'type': cardType, 'bitLength':'26','fields':[('11','08'),('01','10'),('00','00'),('00','00')],
                      'adjust': 'false', 'belowThresh': 'true', 'thresh': '95', 'startBit': '19', 'value': '132', 'mask': 'fffffffffffffff0'}
     customFail1 = {'label': 'customFail1', 'type': cardType, 'bitLength':'19','fields':[('08','0B'),('00','08'),('00','00'),('00','00')],
@@ -1106,18 +1110,18 @@ def multipleCustomTests(outFileStream):
                      'adjust': 'true', 'belowThresh': 'false', 'thresh': '0', 'startBit': '2', 'value': '100', 'mask': 'ffffff0'}
     customList = [customSuccess]
     print "\nAdjustment set.  Below threshold not set, adjustments made:"
-    outFileStream.write("\nAdjustment set.  Threshold not set, adjustments made:\n")
+    outFileStream.write("\nAdjustment set.  Below threshold not set, adjustments made:\n")
     runTest (outFileStream, customSettings = customList)
     
     customSuccess = {'label': 'customSuccess', 'type': cardType, 'bitLength':'26','fields':[('11','08'),('01','10'),('00','00'),('00','00')],
-                     'adjust': 'true', 'belowThresh': 'false', 'thresh': '5000000', 'startBit': '1', 'value': '2147483647', 'mask': 'ffffffffffffffff'}
+                     'adjust': 'true', 'belowThresh': 'true', 'thresh': '5000000', 'startBit': '1', 'value': '2147483647', 'mask': 'ffffffffffffffff'}
     customList = [customSuccess]
     print "\nMax Adjustment Value:"  #max value is 0x7fffffff 
     outFileStream.write("\nMax Adjustment Value:\n")
     runTest (outFileStream, customSettings = customList)
 
     customSuccess = {'label': 'customSuccess', 'type': cardType, 'bitLength':'26','fields':[('11','08'),('01','10'),('00','00'),('00','00')],
-                     'adjust': 'true', 'belowThresh': 'false', 'thresh': '5000000', 'startBit': '2147483647', 'value': '0', 'mask': 'ffffffffffffffff'}
+                     'adjust': 'true', 'belowThresh': 'true', 'thresh': '5000000', 'startBit': '2147483647', 'value': '0', 'mask': 'ffffffffffffffff'}
     customList = [customSuccess]
     print "\nMax Start Bit:"  #max value is 0x7fffffff 
     outFileStream.write("\nMax Start Bit:\n")
@@ -1170,11 +1174,11 @@ def multipleCustomTests(outFileStream):
     outFileStream.write("\nOver Max start bit:\n")
     runTest (outFileStream, failCase = True, customSettings = customList)
     
+    
 
 
 
-
-
+    
 
     
 def disabledCardTests(outFileStream): 
