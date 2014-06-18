@@ -372,7 +372,10 @@ def adjustValue(compare, customSettings):
              print "Card value below threshold and adjustment below threshold is turned off.  No additional processing."
              return 'no adjustment'
         else:
-            intCompare = int(compare) >> int(temp['startBit'])-1 #make new start bit for card number
+            if int(temp['startBit']) > 0:
+                    intCompare = int(compare) >> int(temp['startBit'])-1 #make new start bit for card number
+            else:
+                    intCompare = int(compare) << 1 #create a failure state for start bit = 0 case
             intCompare = intCompare + int(temp['value']) #add adjustment value to card number
             intCompare = intCompare & int(temp['mask'], 16) #bit mask card number
             compare = str(intCompare)
@@ -1121,9 +1124,9 @@ def multipleCustomTests(outFileStream):
     runTest (outFileStream, customSettings = customList)
 
     customSuccess = {'label': 'customSuccess', 'type': cardType, 'bitLength':'26','fields':[('11','08'),('01','10'),('00','00'),('00','00')],
-                     'adjust': 'true', 'belowThresh': 'true', 'thresh': '5000000', 'startBit': '2147483647', 'value': '0', 'mask': 'ffffffffffffffff'}
+                     'adjust': 'true', 'belowThresh': 'true', 'thresh': '5000000', 'startBit': '128', 'value': '0', 'mask': 'ffffffffffffffff'}
     customList = [customSuccess]
-    print "\nMax Start Bit:"  #max value is 0x7fffffff 
+    print "\nMax Start Bit:"  #max value is 128 
     outFileStream.write("\nMax Start Bit:\n")
     runTest (outFileStream, customSettings = customList)
 
@@ -1168,10 +1171,17 @@ def multipleCustomTests(outFileStream):
     runTest (outFileStream, failCase = True, customSettings = customList)
 
     customFail = {'label': 'customFail', 'type': cardType, 'bitLength':'26','fields':[('11','08'),('01','10'),('00','00'),('00','00')],
-                     'adjust': 'true', 'belowThresh': 'false', 'thresh': '5000000', 'startBit': '2147483648', 'value': '0', 'mask': 'fffffffffffffff'}
+                     'adjust': 'true', 'belowThresh': 'true', 'thresh': '5000000', 'startBit': '129', 'value': '0', 'mask': 'fffffffffffffff'}
     customList = [customFail]
     print "\nOver Max start bit:"
     outFileStream.write("\nOver Max start bit:\n")
+    runTest (outFileStream, failCase = True, customSettings = customList)
+
+    customFail = {'label': 'customFail', 'type': cardType, 'bitLength':'26','fields':[('11','08'),('01','10'),('00','00'),('00','00')],
+                     'adjust': 'true', 'belowThresh': 'true', 'thresh': '5000000', 'startBit': '0', 'value': '0', 'mask': 'fffffffffffffff'}
+    customList = [customFail]
+    print "\nStart bit = 0:"
+    outFileStream.write("\nStart bit = 0:\n")
     runTest (outFileStream, failCase = True, customSettings = customList)
     
     
